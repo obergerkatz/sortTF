@@ -21,19 +21,14 @@ jobs:
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: '1.6.6' # or your preferred version
 
       - name: Install dependencies
         run: go mod download
 
-      - name: Install golangci-lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.54.2
-
-
-      - name: Run linter
-        run: golangci-lint run
+      - name: Lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: '1.64.0'
 
       - name: Run tests
         run: go test ./...
