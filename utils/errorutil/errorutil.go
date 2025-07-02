@@ -10,11 +10,7 @@ import (
 
 // Color configuration for error messages
 var (
-	errorColor   = color.New(color.FgRed, color.Bold)
-	warningColor = color.New(color.FgYellow, color.Bold)
-	successColor = color.New(color.FgGreen, color.Bold)
-	infoColor    = color.New(color.FgBlue, color.Bold)
-	fileColor    = color.New(color.FgCyan)
+	errorColor = color.New(color.FgRed, color.Bold)
 )
 
 // CLIError represents an error during CLI execution
@@ -113,31 +109,31 @@ func PrintError(err error, stderr io.Writer) {
 }
 
 func PrintFileNotFoundError(err error, stderr io.Writer) {
-	errorColor.Fprintf(stderr, "❌ File not found: %v\n", err)
+	_, _ = errorColor.Fprintf(stderr, "❌ File not found: %v\n", err)
 }
 
 func PrintPermissionError(err error, stderr io.Writer) {
-	errorColor.Fprintf(stderr, "🔒 Permission denied: %v\n", err)
+	_, _ = errorColor.Fprintf(stderr, "🔒 Permission denied: %v\n", err)
 }
 
 func PrintValidationError(err error, stderr io.Writer) {
-	errorColor.Fprintf(stderr, "⚠️  Validation error: %v\n", err)
+	_, _ = errorColor.Fprintf(stderr, "⚠️  Validation error: %v\n", err)
 }
 
 func PrintParsingError(err error, stderr io.Writer) {
-	errorColor.Fprintf(stderr, "🔍 Syntax error: %v\n", err)
+	_, _ = errorColor.Fprintf(stderr, "🔍 Syntax error: %v\n", err)
 }
 
 func PrintFormattingError(err error, stderr io.Writer) {
-	errorColor.Fprintf(stderr, "🎨 Formatting error: %v\n", err)
+	_, _ = errorColor.Fprintf(stderr, "🎨 Formatting error: %v\n", err)
 }
 
 func PrintSortingError(err error, stderr io.Writer) {
-	errorColor.Fprintf(stderr, "📊 Sorting error: %v\n", err)
+	_, _ = errorColor.Fprintf(stderr, "📊 Sorting error: %v\n", err)
 }
 
 func PrintGenericError(err error, stderr io.Writer) {
-	errorColor.Fprintf(stderr, "❌ Error: %v\n", err)
+	_, _ = errorColor.Fprintf(stderr, "❌ Error: %v\n", err)
 }
 
 // Error extraction helpers
@@ -194,4 +190,4 @@ func NewCLIError(op string, err error) *CLIError {
 // NewNoChangesError constructs a new NoChangesError
 func NewNoChangesError(filePath string) *NoChangesError {
 	return &NoChangesError{FilePath: filePath}
-} 
+}

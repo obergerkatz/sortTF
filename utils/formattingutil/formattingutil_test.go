@@ -352,8 +352,7 @@ func TestFormatFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	unformatted := `terraform{required_version=">= 1.0"}
 provider"aws"{region="us-west-2"}`
@@ -362,7 +361,6 @@ provider"aws"{region="us-west-2"}`
 	if err != nil {
 		t.Fatalf("Failed to write to temp file: %v", err)
 	}
-	tmpFile.Close()
 
 	// Format the file
 	err = FormatFile(tmpFile.Name())
@@ -392,7 +390,7 @@ func TestFormatDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create a test file in the directory
 	tmpFile := filepath.Join(tmpDir, "test.tf")
