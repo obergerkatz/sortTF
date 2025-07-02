@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"sorttf/utils/argsutil"
-
+	"sorttf/utils/errorutil"
 
 	"github.com/fatih/color"
 	"github.com/hashicorp/hcl/v2"
