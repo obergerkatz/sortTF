@@ -30,10 +30,10 @@ func ParseFlags(args []string, stderr io.Writer) (*Config, error) {
 
 	// Custom usage function
 	fs.Usage = func() {
-		fmt.Fprintf(stderr, "Usage: sorttf [flags] [path]\n")
-		fmt.Fprintf(stderr, "\nSort and format Terraform (.tf) and Terragrunt (.hcl) files for consistency and readability.\n")
-		fmt.Fprintf(stderr, "\nPath can be a file or directory. If no path is provided, the current directory is used.\n")
-		fmt.Fprintf(stderr, "\nFlags:\n")
+		_, _ = fmt.Fprintf(stderr, "Usage: sorttf [flags] [path]\n")
+		_, _ = fmt.Fprintf(stderr, "\nSort and format Terraform (.tf) and Terragrunt (.hcl) files for consistency and readability.\n")
+		_, _ = fmt.Fprintf(stderr, "\nPath can be a file or directory. If no path is provided, the current directory is used.\n")
+		_, _ = fmt.Fprintf(stderr, "\nFlags:\n")
 
 		// Create a temporary buffer to capture flag output
 		var flagOutput bytes.Buffer
@@ -41,13 +41,13 @@ func ParseFlags(args []string, stderr io.Writer) (*Config, error) {
 		fs.PrintDefaults()
 		fs.SetOutput(io.Discard) // Reset to discard
 
-		fmt.Fprintf(stderr, "%s", flagOutput.String())
-		fmt.Fprintf(stderr, "\nExamples:\n")
-		fmt.Fprintf(stderr, "  sorttf .                    # Sort and format files in current directory\n")
-		fmt.Fprintf(stderr, "  sorttf main.tf              # Sort and format a specific file\n")
-		fmt.Fprintf(stderr, "  sorttf --recursive .        # Recursively process subdirectories\n")
-		fmt.Fprintf(stderr, "  sorttf --validate .         # Check if files are properly sorted/formatted\n")
-		fmt.Fprintf(stderr, "  sorttf --dry-run .          # Show what would change, with a unified diff\n")
+		_, _ = fmt.Fprintf(stderr, "%s", flagOutput.String())
+		_, _ = fmt.Fprintf(stderr, "\nExamples:\n")
+		_, _ = fmt.Fprintf(stderr, "  sorttf .                    # Sort and format files in current directory\n")
+		_, _ = fmt.Fprintf(stderr, "  sorttf main.tf              # Sort and format a specific file\n")
+		_, _ = fmt.Fprintf(stderr, "  sorttf --recursive .        # Recursively process subdirectories\n")
+		_, _ = fmt.Fprintf(stderr, "  sorttf --validate .         # Check if files are properly sorted/formatted\n")
+		_, _ = fmt.Fprintf(stderr, "  sorttf --dry-run .          # Show what would change, with a unified diff\n")
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -74,4 +74,4 @@ func ParseFlags(args []string, stderr io.Writer) (*Config, error) {
 	return &config, nil
 }
 
-// ... code will be added in the next step ... 
+// ... code will be added in the next step ...

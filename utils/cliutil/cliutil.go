@@ -11,8 +11,8 @@ import (
 	"sorttf/utils/sortingutil"
 	"strings"
 
-	"sorttf/utils/errorutil"
 	"sorttf/utils/argsutil"
+
 
 	"github.com/fatih/color"
 	"github.com/hashicorp/hcl/v2"
@@ -54,11 +54,11 @@ func runMainLogic(config *argsutil.Config, stdout, stderr io.Writer) int {
 	fileInfo, err := os.Stat(config.Root)
 	if err != nil {
 		if os.IsNotExist(err) {
-			errorColor.Fprintf(stderr, "❌ Path '%s' does not exist\n", fileColor.Sprint(config.Root))
+			_, _ = errorColor.Fprintf(stderr, "❌ Path '%s' does not exist\n", fileColor.Sprint(config.Root))
 		} else if os.IsPermission(err) {
-			errorColor.Fprintf(stderr, "🔒 Permission denied accessing '%s'\n", fileColor.Sprint(config.Root))
+			_, _ = errorColor.Fprintf(stderr, "🔒 Permission denied accessing '%s'\n", fileColor.Sprint(config.Root))
 		} else {
-			errorColor.Fprintf(stderr, "❌ Error accessing '%s': %v\n", fileColor.Sprint(config.Root), err)
+			_, _ = errorColor.Fprintf(stderr, "❌ Error accessing '%s': %v\n", fileColor.Sprint(config.Root), err)
 		}
 		return 1
 	}
@@ -69,11 +69,11 @@ func runMainLogic(config *argsutil.Config, stdout, stderr io.Writer) int {
 		// It's a directory - validate and find files
 		if err := fileutil.ValidateDirectoryPath(config.Root); err != nil {
 			if fileutil.IsNotExistError(err) {
-				errorColor.Fprintf(stderr, "❌ Directory '%s' does not exist\n", fileColor.Sprint(config.Root))
+				_, _ = errorColor.Fprintf(stderr, "❌ Directory '%s' does not exist\n", fileColor.Sprint(config.Root))
 			} else if fileutil.IsPermissionError(err) {
-				errorColor.Fprintf(stderr, "🔒 Permission denied accessing directory '%s'\n", fileColor.Sprint(config.Root))
+				_, _ = errorColor.Fprintf(stderr, "🔒 Permission denied accessing directory '%s'\n", fileColor.Sprint(config.Root))
 			} else {
-				errorColor.Fprintf(stderr, "❌ Error validating directory '%s': %v\n", fileColor.Sprint(config.Root), err)
+				_, _ = errorColor.Fprintf(stderr, "❌ Error validating directory '%s': %v\n", fileColor.Sprint(config.Root), err)
 			}
 			return 1
 		}
@@ -82,32 +82,32 @@ func runMainLogic(config *argsutil.Config, stdout, stderr io.Writer) int {
 		files, err = fileutil.FindFiles(config.Root, config.Recursive)
 		if err != nil {
 			if fileutil.IsNotExistError(err) {
-				errorColor.Fprintf(stderr, "❌ Path '%s' does not exist\n", fileColor.Sprint(fileutil.GetFileUtilErrorPath(err)))
+				_, _ = errorColor.Fprintf(stderr, "❌ Path '%s' does not exist\n", fileColor.Sprint(fileutil.GetFileUtilErrorPath(err)))
 			} else if fileutil.IsPermissionError(err) {
-				errorColor.Fprintf(stderr, "🔒 Permission denied accessing '%s'\n", fileColor.Sprint(fileutil.GetFileUtilErrorPath(err)))
+				_, _ = errorColor.Fprintf(stderr, "🔒 Permission denied accessing '%s'\n", fileColor.Sprint(fileutil.GetFileUtilErrorPath(err)))
 			} else {
-				errorColor.Fprintf(stderr, "❌ Error finding files: %v\n", err)
+				_, _ = errorColor.Fprintf(stderr, "❌ Error finding files: %v\n", err)
 			}
 			return 1
 		}
 	} else {
 		// It's a file - check if it's a supported file type
 		if !isSupportedFile(config.Root) {
-			errorColor.Fprintf(stderr, "❌ File '%s' is not a supported file type (.tf or .hcl)\n", fileColor.Sprint(config.Root))
+			_, _ = errorColor.Fprintf(stderr, "❌ File '%s' is not a supported file type (.tf or .hcl)\n", fileColor.Sprint(config.Root))
 			return 1
 		}
 		files = []string{config.Root}
 	}
 
 	if len(files) == 0 {
-		infoColor.Fprintf(stdout, "ℹ️  No Terraform or Terragrunt files found.\n")
+		_, _ = infoColor.Fprintf(stdout, "ℹ️  No Terraform or Terragrunt files found.\n")
 		return 0
 	}
 
 	if config.Verbose {
-		infoColor.Fprintf(stdout, "📁 Found %d files:\n", len(files))
+		_, _ = infoColor.Fprintf(stdout, "📁 Found %d files:\n", len(files))
 		for _, f := range files {
-			fmt.Fprintf(stdout, "   %s\n", fileColor.Sprint(f))
+			_, _ = fmt.Fprintf(stdout, "   %s\n", fileColor.Sprint(f))
 		}
 	}
 
@@ -136,16 +136,16 @@ func runMainLogic(config *argsutil.Config, stdout, stderr io.Writer) int {
 	// Print summary
 	if config.DryRun {
 		if processedCount == 0 && errorCount == 0 {
-			successColor.Fprintf(stdout, "✅ Processed %d files, no changes needed\n", len(files))
+			_, _ = successColor.Fprintf(stdout, "✅ Processed %d files, no changes needed\n", len(files))
 		} else {
-			infoColor.Fprintf(stdout, "📊 Processed %d files, %d would be updated\n", len(files), processedCount)
+			_, _ = infoColor.Fprintf(stdout, "📊 Processed %d files, %d would be updated\n", len(files), processedCount)
 		}
 	} else {
-		successColor.Fprintf(stdout, "✅ Processed %d files\n", processedCount)
+		_, _ = successColor.Fprintf(stdout, "✅ Processed %d files\n", processedCount)
 	}
 
 	if errorCount > 0 {
-		errorColor.Fprintf(stderr, "❌ Encountered %d errors\n", errorCount)
+		_, _ = errorColor.Fprintf(stderr, "❌ Encountered %d errors\n", errorCount)
 		if config.Validate {
 			return 1
 		}
@@ -163,7 +163,7 @@ func isSupportedFile(filePath string) bool {
 // processFile handles a single file
 func processFile(filePath string, config *argsutil.Config, stdout, stderr io.Writer) error {
 	if config.Verbose {
-		infoColor.Fprintf(stdout, "🔄 Processing: %s\n", fileColor.Sprint(filePath))
+		_, _ = infoColor.Fprintf(stdout, "🔄 Processing: %s\n", fileColor.Sprint(filePath))
 	}
 
 	// Step 1: Read original file content
@@ -213,19 +213,19 @@ func processFile(filePath string, config *argsutil.Config, stdout, stderr io.Wri
 	// Step 4: Compare
 	if bytes.Equal(origContent, []byte(formatted)) {
 		if config.Verbose {
-			successColor.Fprintf(stdout, "✅ No changes needed: %s\n", fileColor.Sprint(filePath))
+			_, _ = successColor.Fprintf(stdout, "✅ No changes needed: %s\n", fileColor.Sprint(filePath))
 		}
 		return errorutil.NewNoChangesError(filePath)
 	}
 
 	if config.DryRun {
-		warningColor.Fprintf(stdout, "📝 Would update: %s\n", fileColor.Sprint(filePath))
+		_, _ = warningColor.Fprintf(stdout, "📝 Would update: %s\n", fileColor.Sprint(filePath))
 		printUnifiedDiff(string(origContent), formatted, filePath, stdout)
 		return nil
 	}
 
 	if config.Validate {
-		warningColor.Fprintf(stdout, "⚠️  Needs update: %s\n", fileColor.Sprint(filePath))
+		_, _ = warningColor.Fprintf(stdout, "⚠️  Needs update: %s\n", fileColor.Sprint(filePath))
 		printUnifiedDiff(string(origContent), formatted, filePath, stdout)
 		return errorutil.NewCLIError("validate", fmt.Errorf("file needs update: %s", filePath))
 	}
@@ -238,14 +238,14 @@ func processFile(filePath string, config *argsutil.Config, stdout, stderr io.Wri
 	if err := os.Rename(tmpFile, filePath); err != nil {
 		return errorutil.NewCLIError("processFile", fmt.Errorf("failed to replace original file: %v", err))
 	}
-	successColor.Fprintf(stdout, "✅ Updated: %s\n", fileColor.Sprint(filePath))
+	_, _ = successColor.Fprintf(stdout, "✅ Updated: %s\n", fileColor.Sprint(filePath))
 	return nil
 }
 
 // printUnifiedDiff prints a unified diff between two file contents
 func printUnifiedDiff(a, b, filePath string, out io.Writer) {
 	if a == b {
-		fmt.Fprintf(out, "(No changes)\n")
+		_, _ = fmt.Fprintf(out, "(No changes)\n")
 		return
 	}
 
@@ -253,9 +253,9 @@ func printUnifiedDiff(a, b, filePath string, out io.Writer) {
 	linesA := strings.Split(a, "\n")
 	linesB := strings.Split(b, "\n")
 
-	fmt.Fprintf(out, "--- %s (original)\n", filePath)
-	fmt.Fprintf(out, "+++ %s (formatted)\n", filePath)
-	fmt.Fprintf(out, "@@ Changes @@\n")
+	_, _ = fmt.Fprintf(out, "--- %s (original)\n", filePath)
+	_, _ = fmt.Fprintf(out, "+++ %s (formatted)\n", filePath)
+	_, _ = fmt.Fprintf(out, "@@ Changes @@\n")
 
 	// Simple line-by-line diff
 	maxLines := len(linesA)
@@ -276,17 +276,17 @@ func printUnifiedDiff(a, b, filePath string, out io.Writer) {
 
 		if lineA != lineB {
 			if lineA != "" {
-				fmt.Fprintf(out, "-%s\n", lineA)
+				_, _ = fmt.Fprintf(out, "-%s\n", lineA)
 			}
 			if lineB != "" {
-				fmt.Fprintf(out, "+%s\n", lineB)
+				_, _ = fmt.Fprintf(out, "+%s\n", lineB)
 			}
 		} else {
 			// Show context (first few and last few lines)
 			if i < 3 || i >= maxLines-3 {
-				fmt.Fprintf(out, " %s\n", lineA)
+				_, _ = fmt.Fprintf(out, " %s\n", lineA)
 			} else if i == 3 && maxLines > 6 {
-				fmt.Fprintf(out, "...\n")
+				_, _ = fmt.Fprintf(out, "...\n")
 			}
 		}
 	}

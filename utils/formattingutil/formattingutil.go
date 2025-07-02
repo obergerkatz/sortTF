@@ -104,8 +104,8 @@ func applyTerraformFmt(content string) (string, error) {
 			Err:     fmt.Errorf("failed to create temporary file: %v", err),
 		}
 	}
-	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+	defer func() { _ = tmpFile.Close() }()
 
 	// Write content to temp file
 	_, err = tmpFile.WriteString(content)
@@ -116,7 +116,6 @@ func applyTerraformFmt(content string) (string, error) {
 			Err:     fmt.Errorf("failed to write to temporary file: %v", err),
 		}
 	}
-	tmpFile.Close()
 
 	// Run terraform fmt on the temp file
 	cmd := exec.Command("terraform", "fmt", tmpFile.Name())

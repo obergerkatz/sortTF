@@ -225,7 +225,9 @@ func TestFindFilesRecursiveEdgeCases(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create nested structure with various file types
-	os.MkdirAll(filepath.Join(dir, "subdir", "deep"), 0755)
+	if err := os.MkdirAll(filepath.Join(dir, "subdir", "deep"), 0755); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(filepath.Join(dir, "subdir", "deep", "nested.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -237,7 +239,9 @@ func TestFindFilesRecursiveEdgeCases(t *testing.T) {
 	}
 
 	// Create .terraform directory in subdirectory
-	os.Mkdir(filepath.Join(dir, "subdir", ".terraform"), 0755)
+	if err := os.Mkdir(filepath.Join(dir, "subdir", ".terraform"), 0755); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(filepath.Join(dir, "subdir", ".terraform", "should_ignore.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -306,9 +310,15 @@ func TestFindFilesIntegration(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create typical Terraform project structure
-	os.MkdirAll(filepath.Join(dir, "modules", "vpc"), 0755)
-	os.MkdirAll(filepath.Join(dir, "environments", "dev"), 0755)
-	os.MkdirAll(filepath.Join(dir, "environments", "prod"), 0755)
+	if err := os.MkdirAll(filepath.Join(dir, "modules", "vpc"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "environments", "dev"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "environments", "prod"), 0755); err != nil {
+		t.Fatal(err)
+	}
 
 	// Main files
 	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
