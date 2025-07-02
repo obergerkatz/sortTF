@@ -2,30 +2,31 @@
 
 A powerful command-line tool for sorting and formatting Terraform (.tf) and Terragrunt (.hcl) files to ensure consistency and readability across your infrastructure code.
 
-## 🚀 Features
+## 🚀 Features at a Glance
 
-- **Smart Block Sorting**: Automatically sorts Terraform blocks in the correct order (terraform → provider → variable → locals → data → resource → module → output)
-- **Attribute Sorting**: Sorts attributes within blocks alphabetically, with special handling for `for_each`
-- **Nested Block Support**: Handles nested blocks within resources and providers
-- **Formatting**: Applies `terraform fmt` formatting standards
-- **Multiple Modes**: Dry-run, validation, and recursive directory processing
-- **Comprehensive Error Handling**: Detailed error messages with file paths and context
-- **Cross-Platform**: Works on macOS, Linux, and Windows
+- **Smart Block Sorting**: Orders Terraform blocks for readability and best practices.
+- **Attribute Sorting**: Alphabetizes attributes, with special handling for `for_each`.
+- **Nested Block Support**: Handles deeply nested and complex HCL structures.
+- **Formatting**: Applies `terraform fmt` standards.
+- **Multiple Modes**: Dry-run, validation, and recursive directory processing.
+- **Comprehensive Error Handling**: Detailed, colorized error messages.
+- **Cross-Platform**: Works on macOS, Linux, and Windows.
+- **Tested & Modular**: Well-tested, DRY, and maintainable codebase.
 
-## 📦 Installation
+## ⚡ Quickstart
 
-### From Source
 ```bash
+# Install (from source)
 git clone https://github.com/yourusername/sortTF.git
 cd sortTF
 go build -o sorttf
-# Move to your PATH
 sudo mv sorttf /usr/local/bin/
-```
 
-### Using Go Install
-```bash
+# Or using Go install
 go install github.com/OBerger96/sortTF@latest
+
+# Basic usage
+sorttf .
 ```
 
 ## 🛠️ Prerequisites
@@ -38,53 +39,29 @@ go install github.com/OBerger96/sortTF@latest
 ### Basic Usage
 
 ```bash
-# Sort and format files in current directory
-sorttf .
-
-# Sort and format a specific file
-sorttf main.tf
-
-# Recursively process subdirectories
-sorttf --recursive .
-
-# Show what would change without writing
-sorttf --dry-run .
-
-# Validate files without making changes
-sorttf --validate .
-
-# Verbose output
-sorttf --verbose .
+sorttf .                # Sort and format files in current directory
+sorttf main.tf          # Sort and format a specific file
+sorttf --recursive .    # Recursively process subdirectories
+sorttf --dry-run .      # Show what would change without writing
+sorttf --validate .     # Validate files without making changes
+sorttf --verbose .      # Verbose output
 ```
 
 ### Command Line Options
 
-| Flag | Description |
-|------|-------------|
-| `--recursive` | Scan directories recursively |
-| `--dry-run` | Show what would be changed without writing (shows a unified diff) |
-| `--verbose` | Print detailed logs about which files were parsed, sorted, and formatted |
-| `--validate` | Exit with a non-zero code if any files are not sorted/formatted |
+| Flag         | Description                                                        |
+|--------------|--------------------------------------------------------------------|
+| `--recursive`| Scan directories recursively                                       |
+| `--dry-run`  | Show what would be changed without writing (shows a unified diff)  |
+| `--verbose`  | Print detailed logs about which files were parsed, sorted, and formatted |
+| `--validate` | Exit with a non-zero code if any files are not sorted/formatted    |
 
 ### Examples
 
-#### Sort a Single File
 ```bash
 sorttf main.tf
-```
-
-#### Process an Entire Project
-```bash
 sorttf --recursive --verbose .
-```
-
-#### Validate CI/CD Pipeline
-```bash
 sorttf --validate --recursive .
-```
-
-#### Preview Changes
-```bash
 sorttf --dry-run --recursive .
 ```
 
@@ -94,81 +71,51 @@ sorttf --dry-run --recursive .
 
 sortTF sorts Terraform blocks in the following order:
 
-1. **terraform** - Terraform configuration blocks
-2. **provider** - Provider configurations
-3. **variable** - Input variables
-4. **locals** - Local values
-5. **data** - Data sources
-6. **resource** - Resource definitions
-7. **module** - Module calls
-8. **output** - Output values
+1. **terraform**
+2. **provider**
+3. **variable**
+4. **locals**
+5. **data**
+6. **resource**
+7. **module**
+8. **output**
 
 ### Attribute Sorting
-
-Within each block, attributes are sorted alphabetically with special handling:
 
 - `for_each` is always placed first (if present)
 - Other attributes are sorted alphabetically
 - Nested blocks are sorted by type and then by labels
 
-### Example Transformation
+#### Example Transformation
 
 **Before:**
 ```hcl
 resource "aws_instance" "web" {
   instance_type = "t3.micro"
   ami           = "ami-123456"
-  
-  tags = {
-    Name = "web-server"
-  }
+  tags = { Name = "web-server" }
 }
-
-provider "aws" {
-  region = "us-west-2"
-}
-
-variable "environment" {
-  type = string
-}
+provider "aws" { region = "us-west-2" }
+variable "environment" { type = string }
 ```
 
 **After:**
 ```hcl
-provider "aws" {
-  region = "us-west-2"
-}
-
-variable "environment" {
-  type = string
-}
-
+provider "aws" { region = "us-west-2" }
+variable "environment" { type = string }
 resource "aws_instance" "web" {
   ami           = "ami-123456"
   instance_type = "t3.micro"
-
-  tags = {
-    Name = "web-server"
-  }
+  tags = { Name = "web-server" }
 }
 ```
 
 ## 🧪 Testing
 
-Run the test suite:
-
 ```bash
-# Run all tests
-go test ./...
-
-# Run tests with verbose output
-go test -v ./...
-
-# Run tests for a specific package
-go test ./utils/sortingutil
-
-# Run integration tests
-go test ./utils/sortingutil -run TestSortHCLFileWithRealFiles
+go test ./...           # Run all tests
+go test -v ./...        # Verbose output
+go test -cover ./...    # Run with coverage
 ```
 
 ## 🏗️ Development
@@ -180,6 +127,8 @@ sortTF/
 ├── main.go                 # Application entry point
 ├── utils/
 │   ├── cliutil/           # Command-line interface
+│   ├── argsutil/          # CLI argument parsing
+│   ├── errorutil/         # Error helpers and types
 │   ├── fileutil/          # File system operations
 │   ├── formattingutil/    # HCL formatting
 │   ├── parsingutil/       # HCL parsing and validation
@@ -239,7 +188,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/sortTF/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/sortTF/discussions)
 
 ## 🙏 Acknowledgments
 
