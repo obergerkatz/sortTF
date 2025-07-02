@@ -2,13 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main, feature/**]
   pull_request:
-    branches: [ main ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,17 +18,25 @@ jobs:
         with:
           go-version: '1.21'
 
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.6.6' # or your preferred version
+
       - name: Install dependencies
         run: go mod download
 
-      - name: Build
-        run: go build -v ./...
+      - name: Run linter
+        run: go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 
-      - name: Vet
-        run: go vet ./...
+      - name: Run tests
+        run: go test ./...
 
-      - name: Lint
-        uses: golangci/golangci-lint-action@v4
+      - name: Build CLI
+        run: go build -o sorttf
 
-      - name: Test
-        run: go test -v -cover ./... 
+      # Optionally, run your CLI tool on a test file to ensure terraform fmt is invoked
+      - name: Test sorttf CLI with terraform fmt
+        run: |
+          echo 'resource "null_resource" "example" {}' > test.tf
+          ./sorttf test.tf 
