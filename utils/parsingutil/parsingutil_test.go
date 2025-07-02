@@ -679,10 +679,3 @@ func TestParseHCLFile_ErrorCases(t *testing.T) {
 		})
 	}
 }
-
-func isNilOrChecker(err error, checker func(error) bool) bool {
-	if checker == nil {
-		return true
-	}
-	return checker(err)
-}

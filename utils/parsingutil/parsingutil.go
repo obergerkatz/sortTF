@@ -2,7 +2,6 @@ package parsingutil
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -94,7 +93,7 @@ func ParseHCLFile(path string) (*ParsedFile, error) {
 	}
 
 	parser := hclparse.NewParser()
-	src, err := ioutil.ReadFile(path)
+	src, err := os.ReadFile(path)
 	if err != nil {
 		return nil, &ParsingError{
 			Op:   "ParseHCLFile",

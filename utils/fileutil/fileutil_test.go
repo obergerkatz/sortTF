@@ -55,7 +55,9 @@ func TestIsValidFile_TableDriven(t *testing.T) {
 func TestIsValidFile_Symlink(t *testing.T) {
 	dir := t.TempDir()
 	target := filepath.Join(dir, "target.tf")
-	os.WriteFile(target, []byte(""), 0644)
+	if err := os.WriteFile(target, []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 	symlink := filepath.Join(dir, "link.tf")
 	err := os.Symlink(target, symlink)
 	if err != nil {
@@ -75,32 +77,52 @@ func TestIsValidFile(t *testing.T) {
 
 	// .tf file
 	tfPath := filepath.Join(dir, "testfile.tf")
-	os.WriteFile(tfPath, []byte(""), 0644)
-	tfInfo, _ := os.Stat(tfPath)
+	if err := os.WriteFile(tfPath, []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	tfInfo, err := os.Stat(tfPath)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !IsValidFile(tfPath, tfInfo) {
 		t.Errorf("Expected .tf file to be valid")
 	}
 
 	// .hcl file
 	hclPath := filepath.Join(dir, "testfile.hcl")
-	os.WriteFile(hclPath, []byte(""), 0644)
-	hclInfo, _ := os.Stat(hclPath)
+	if err := os.WriteFile(hclPath, []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	hclInfo, err := os.Stat(hclPath)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !IsValidFile(hclPath, hclInfo) {
 		t.Errorf("Expected .hcl file to be valid")
 	}
 
 	// .terraform.lock.hcl file
 	lockPath := filepath.Join(dir, ".terraform.lock.hcl")
-	os.WriteFile(lockPath, []byte(""), 0644)
-	lockInfo, _ := os.Stat(lockPath)
+	if err := os.WriteFile(lockPath, []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	lockInfo, err := os.Stat(lockPath)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if IsValidFile(lockPath, lockInfo) {
 		t.Errorf("Expected .terraform.lock.hcl to be invalid")
 	}
 
 	// .txt file
 	txtPath := filepath.Join(dir, "testfile.txt")
-	os.WriteFile(txtPath, []byte(""), 0644)
-	txtInfo, _ := os.Stat(txtPath)
+	if err := os.WriteFile(txtPath, []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	txtInfo, err := os.Stat(txtPath)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if IsValidFile(txtPath, txtInfo) {
 		t.Errorf("Expected .txt file to be invalid")
 	}

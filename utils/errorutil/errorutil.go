@@ -10,11 +10,7 @@ import (
 
 // Color configuration for error messages
 var (
-	errorColor   = color.New(color.FgRed, color.Bold)
-	warningColor = color.New(color.FgYellow, color.Bold)
-	successColor = color.New(color.FgGreen, color.Bold)
-	infoColor    = color.New(color.FgBlue, color.Bold)
-	fileColor    = color.New(color.FgCyan)
+	errorColor = color.New(color.FgRed, color.Bold)
 )
 
 // CLIError represents an error during CLI execution
@@ -194,4 +190,4 @@ func NewCLIError(op string, err error) *CLIError {
 // NewNoChangesError constructs a new NoChangesError
 func NewNoChangesError(filePath string) *NoChangesError {
 	return &NoChangesError{FilePath: filePath}
-} 
+}
