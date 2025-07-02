@@ -2,17 +2,17 @@ package cliutil
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sorttf/utils/fileutil"
-	"sorttf/utils/formattingutil"
 	"sorttf/utils/parsingutil"
 	"sorttf/utils/sortingutil"
 	"strings"
+
+	"sorttf/utils/errorutil"
+	"sorttf/utils/argsutil"
 
 	"github.com/fatih/color"
 	"github.com/hashicorp/hcl/v2"
@@ -28,41 +28,6 @@ var (
 	fileColor    = color.New(color.FgCyan)
 )
 
-// CLIError represents an error during CLI execution
-type CLIError struct {
-	Op  string
-	Err error
-}
-
-func (e *CLIError) Error() string {
-	if e.Err != nil {
-		return fmt.Sprintf("cliutil %s: %v", e.Op, e.Err)
-	}
-	return fmt.Sprintf("cliutil %s", e.Op)
-}
-
-func (e *CLIError) Unwrap() error {
-	return e.Err
-}
-
-// Config holds all CLI configuration
-type Config struct {
-	Root      string
-	Recursive bool
-	DryRun    bool
-	Verbose   bool
-	Validate  bool
-}
-
-// NoChangesError indicates no changes are needed for a file
-type NoChangesError struct {
-	FilePath string
-}
-
-func (e *NoChangesError) Error() string {
-	return fmt.Sprintf("no changes needed for %s", e.FilePath)
-}
-
 // RunCLI is the main entry point for CLI execution
 func RunCLI(args []string) int {
 	return RunCLIWithWriters(args, os.Stdout, os.Stderr)
@@ -70,88 +35,21 @@ func RunCLI(args []string) int {
 
 // RunCLIWithWriters allows testing by providing custom writers
 func RunCLIWithWriters(args []string, stdout, stderr io.Writer) int {
-	config, err := parseFlags(args, stderr)
+	config, err := argsutil.ParseFlags(args, stderr)
 	if err != nil {
-		if cliErr, ok := err.(*CLIError); ok && cliErr.Op == "help" {
+		if err.Error() == "help" {
 			// Help was requested, just exit with success
 			return 0
 		}
-		printError(err, stderr)
+		errorutil.PrintError(err, stderr)
 		return 2 // Usage error
 	}
 
 	return runMainLogic(config, stdout, stderr)
 }
 
-// parseFlags parses command line arguments and returns a Config
-func parseFlags(args []string, stderr io.Writer) (*Config, error) {
-	fs := flag.NewFlagSet("sorttf", flag.ContinueOnError)
-	fs.SetOutput(io.Discard) // Suppress default error output
-
-	var config Config
-
-	fs.BoolVar(&config.Recursive, "recursive", false, "Scan directories recursively")
-	fs.BoolVar(&config.DryRun, "dry-run", false, "Show what would be changed without writing (shows a unified diff)")
-	fs.BoolVar(&config.Verbose, "verbose", false, "Print detailed logs about which files were parsed, sorted, and formatted")
-	fs.BoolVar(&config.Validate, "validate", false, "Exit with a non-zero code if any files are not sorted/formatted")
-
-	// Custom usage function
-	fs.Usage = func() {
-		fmt.Fprintf(stderr, "Usage: sorttf [flags] [path]\n")
-		fmt.Fprintf(stderr, "\nSort and format Terraform (.tf) and Terragrunt (.hcl) files for consistency and readability.\n")
-		fmt.Fprintf(stderr, "\nPath can be a file or directory. If no path is provided, the current directory is used.\n")
-		fmt.Fprintf(stderr, "\nFlags:\n")
-
-		// Create a temporary buffer to capture flag output
-		var flagOutput bytes.Buffer
-		fs.SetOutput(&flagOutput)
-		fs.PrintDefaults()
-		fs.SetOutput(io.Discard) // Reset to discard
-
-		fmt.Fprintf(stderr, "%s", flagOutput.String())
-		fmt.Fprintf(stderr, "\nExamples:\n")
-		fmt.Fprintf(stderr, "  sorttf .                    # Sort and format files in current directory\n")
-		fmt.Fprintf(stderr, "  sorttf main.tf              # Sort and format a specific file\n")
-		fmt.Fprintf(stderr, "  sorttf --recursive .        # Recursively process subdirectories\n")
-		fmt.Fprintf(stderr, "  sorttf --validate .         # Check if files are properly sorted/formatted\n")
-		fmt.Fprintf(stderr, "  sorttf --dry-run .          # Show what would change, with a unified diff\n")
-	}
-
-	if err := fs.Parse(args); err != nil {
-		// Don't treat help request as an error
-		if err.Error() == "flag: help requested" {
-			return nil, &CLIError{
-				Op:  "help",
-				Err: nil,
-			}
-		}
-		return nil, &CLIError{
-			Op:  "parseFlags",
-			Err: err,
-		}
-	}
-
-	// Get positional arguments
-	positionalArgs := fs.Args()
-	if len(positionalArgs) > 1 {
-		return nil, &CLIError{
-			Op:  "parseFlags",
-			Err: fmt.Errorf("too many arguments provided"),
-		}
-	}
-
-	// Set root directory
-	if len(positionalArgs) == 0 {
-		config.Root = "."
-	} else {
-		config.Root = positionalArgs[0]
-	}
-
-	return &config, nil
-}
-
 // runMainLogic executes the main CLI logic
-func runMainLogic(config *Config, stdout, stderr io.Writer) int {
+func runMainLogic(config *argsutil.Config, stdout, stderr io.Writer) int {
 	// Check if the path is a file or directory
 	fileInfo, err := os.Stat(config.Root)
 	if err != nil {
@@ -220,11 +118,11 @@ func runMainLogic(config *Config, stdout, stderr io.Writer) int {
 
 	for _, filePath := range files {
 		if err := processFile(filePath, config, stdout, stderr); err != nil {
-			if _, ok := err.(*NoChangesError); ok {
+			if _, ok := err.(*errorutil.NoChangesError); ok {
 				noChangesCount++
 			} else {
 				errorCount++
-				printError(err, stderr)
+				errorutil.PrintError(err, stderr)
 				if config.Validate {
 					// In validate mode, continue processing but will exit with error
 					continue
@@ -263,86 +161,53 @@ func isSupportedFile(filePath string) bool {
 }
 
 // processFile handles a single file
-func processFile(filePath string, config *Config, stdout, stderr io.Writer) error {
+func processFile(filePath string, config *argsutil.Config, stdout, stderr io.Writer) error {
 	if config.Verbose {
 		infoColor.Fprintf(stdout, "🔄 Processing: %s\n", fileColor.Sprint(filePath))
 	}
 
 	// Step 1: Read original file content
-	origContent, err := ioutil.ReadFile(filePath)
+	origContent, err := os.ReadFile(filePath)
 	if err != nil {
-		return &CLIError{
-			Op:  "processFile",
-			Err: fmt.Errorf("failed to read file: %v", err),
-		}
+		return errorutil.NewCLIError("processFile", fmt.Errorf("failed to read file: %v", err))
 	}
 
 	// Step 2: Parse and validate
 	parsed, err := parsingutil.ParseHCLFile(filePath)
 	if err != nil {
 		if parsingutil.IsNotExistError(err) {
-			return &CLIError{
-				Op:  "processFile",
-				Err: fmt.Errorf("file not found: %s", filePath),
-			}
+			return errorutil.NewCLIError("processFile", fmt.Errorf("file not found: %s", filePath))
 		} else if parsingutil.IsHCLParseError(err) {
-			return &CLIError{
-				Op:  "processFile",
-				Err: fmt.Errorf("syntax error in %s: %v", filePath, err),
-			}
+			return errorutil.NewCLIError("processFile", fmt.Errorf("syntax error in %s: %v", filePath, err))
 		} else if parsingutil.IsParsingError(err) {
-			return &CLIError{
-				Op:  "processFile",
-				Err: fmt.Errorf("parsing error in %s: %v", filePath, err),
-			}
+			return errorutil.NewCLIError("processFile", fmt.Errorf("parsing error in %s: %v", filePath, err))
 		}
-		return &CLIError{
-			Op:  "processFile",
-			Err: fmt.Errorf("failed to parse %s: %v", filePath, err),
-		}
+		return errorutil.NewCLIError("processFile", fmt.Errorf("failed to parse %s: %v", filePath, err))
 	}
 	if err := parsingutil.ValidateRequiredBlockLabels(parsed); err != nil {
 		if parsingutil.IsValidationError(err) {
-			return &CLIError{
-				Op:  "processFile",
-				Err: fmt.Errorf("validation error in %s: %v", filePath, err),
-			}
+			return errorutil.NewCLIError("processFile", fmt.Errorf("validation error in %s: %v", filePath, err))
 		}
-		return &CLIError{
-			Op:  "processFile",
-			Err: fmt.Errorf("validation failed for %s: %v", filePath, err),
-		}
+		return errorutil.NewCLIError("processFile", fmt.Errorf("validation failed for %s: %v", filePath, err))
 	}
 
 	// Step 3: Sort and format
 	hclFile, diags := hclwrite.ParseConfig(origContent, filePath, hcl.Pos{Line: 1, Column: 1})
 	if diags.HasErrors() {
-		return &CLIError{
-			Op:  "processFile",
-			Err: fmt.Errorf("failed to parse file as HCL: %v", diags),
-		}
+		return errorutil.NewCLIError("processFile", fmt.Errorf("failed to parse file as HCL: %v", diags))
 	}
 	formattedResult, err := sortingutil.SortAndFormatHCLFile(hclFile)
 	if err != nil {
 		if sortingutil.IsSortingError(err) {
-			return &CLIError{
-				Op:  "processFile",
-				Err: fmt.Errorf("sorting/formatting error in %s: %v", filePath, err),
-			}
+			return errorutil.NewCLIError("processFile", fmt.Errorf("sorting/formatting error in %s: %v", filePath, err))
 		}
-		return &CLIError{
-			Op:  "processFile",
-			Err: fmt.Errorf("failed to sort/format %s: %v", filePath, err),
-		}
+		return errorutil.NewCLIError("processFile", fmt.Errorf("failed to sort/format %s: %v", filePath, err))
 	}
 	formatted := formattedResult
 
 	// Safety check: don't write empty content
 	if len(formatted) == 0 {
-		return &CLIError{
-			Op:  "processFile",
-			Err: fmt.Errorf("formatted content is empty for %s", filePath),
-		}
+		return errorutil.NewCLIError("processFile", fmt.Errorf("formatted content is empty for %s", filePath))
 	}
 
 	// Step 4: Compare
@@ -350,7 +215,7 @@ func processFile(filePath string, config *Config, stdout, stderr io.Writer) erro
 		if config.Verbose {
 			successColor.Fprintf(stdout, "✅ No changes needed: %s\n", fileColor.Sprint(filePath))
 		}
-		return &NoChangesError{FilePath: filePath}
+		return errorutil.NewNoChangesError(filePath)
 	}
 
 	if config.DryRun {
@@ -362,283 +227,22 @@ func processFile(filePath string, config *Config, stdout, stderr io.Writer) erro
 	if config.Validate {
 		warningColor.Fprintf(stdout, "⚠️  Needs update: %s\n", fileColor.Sprint(filePath))
 		printUnifiedDiff(string(origContent), formatted, filePath, stdout)
-		return &CLIError{Op: "validate", Err: fmt.Errorf("file needs update: %s", filePath)}
+		return errorutil.NewCLIError("validate", fmt.Errorf("file needs update: %s", filePath))
 	}
 
 	// Step 5: Atomic write
 	tmpFile := filePath + ".tmp"
-	if err := ioutil.WriteFile(tmpFile, []byte(formatted), 0644); err != nil {
-		return &CLIError{
-			Op:  "processFile",
-			Err: fmt.Errorf("failed to write temp file: %v", err),
-		}
+	if err := os.WriteFile(tmpFile, []byte(formatted), 0644); err != nil {
+		return errorutil.NewCLIError("processFile", fmt.Errorf("failed to write temp file: %v", err))
 	}
 	if err := os.Rename(tmpFile, filePath); err != nil {
-		return &CLIError{
-			Op:  "processFile",
-			Err: fmt.Errorf("failed to replace original file: %v", err),
-		}
+		return errorutil.NewCLIError("processFile", fmt.Errorf("failed to replace original file: %v", err))
 	}
 	successColor.Fprintf(stdout, "✅ Updated: %s\n", fileColor.Sprint(filePath))
 	return nil
 }
 
-// printError prints a formatted error message with color and context
-func printError(err error, stderr io.Writer) {
-	if err == nil {
-		return
-	}
-
-	// Determine error type and format accordingly
-	switch {
-	case isFileNotFoundError(err):
-		printFileNotFoundError(err, stderr)
-	case isPermissionError(err):
-		printPermissionError(err, stderr)
-	case isValidationError(err):
-		printValidationError(err, stderr)
-	case isParsingError(err):
-		printParsingError(err, stderr)
-	case isFormattingError(err):
-		printFormattingError(err, stderr)
-	case isSortingError(err):
-		printSortingError(err, stderr)
-	default:
-		printGenericError(err, stderr)
-	}
-}
-
-// Helper functions to identify error types
-func isFileNotFoundError(err error) bool {
-	return fileutil.IsNotExistError(err) ||
-		strings.Contains(err.Error(), "does not exist") ||
-		strings.Contains(err.Error(), "file not found")
-}
-
-func isPermissionError(err error) bool {
-	return fileutil.IsPermissionError(err) ||
-		strings.Contains(err.Error(), "permission denied") ||
-		strings.Contains(err.Error(), "Permission denied")
-}
-
-func isValidationError(err error) bool {
-	return parsingutil.IsValidationError(err) ||
-		strings.Contains(err.Error(), "validation error") ||
-		strings.Contains(err.Error(), "validation failed")
-}
-
-func isParsingError(err error) bool {
-	return parsingutil.IsParsingError(err) ||
-		parsingutil.IsHCLParseError(err) ||
-		strings.Contains(err.Error(), "syntax error") ||
-		strings.Contains(err.Error(), "parsing error")
-}
-
-func isFormattingError(err error) bool {
-	return formattingutil.IsFormattingError(err) ||
-		formattingutil.IsTerraformNotFoundError(err) ||
-		strings.Contains(err.Error(), "formatting error")
-}
-
-func isSortingError(err error) bool {
-	return sortingutil.IsSortingError(err) ||
-		strings.Contains(err.Error(), "sorting error")
-}
-
-// Specific error printing functions
-func printFileNotFoundError(err error, stderr io.Writer) {
-	filePath := extractFilePath(err)
-	if filePath != "" {
-		errorColor.Fprintf(stderr, "❌ File not found: %s\n", fileColor.Sprint(filePath))
-		infoColor.Fprintf(stderr, "   Make sure the file exists and the path is correct.\n")
-	} else {
-		errorColor.Fprintf(stderr, "❌ File not found: %v\n", err)
-	}
-}
-
-func printPermissionError(err error, stderr io.Writer) {
-	filePath := extractFilePath(err)
-	if filePath != "" {
-		errorColor.Fprintf(stderr, "🔒 Permission denied: %s\n", fileColor.Sprint(filePath))
-		infoColor.Fprintf(stderr, "   Check file permissions or run with appropriate privileges.\n")
-	} else {
-		errorColor.Fprintf(stderr, "🔒 Permission denied: %v\n", err)
-	}
-}
-
-func printValidationError(err error, stderr io.Writer) {
-	filePath := extractFilePath(err)
-	if filePath != "" {
-		errorColor.Fprintf(stderr, "⚠️  Validation error in %s:\n", fileColor.Sprint(filePath))
-	} else {
-		errorColor.Fprintf(stderr, "⚠️  Validation error:\n")
-	}
-
-	// Extract and format the validation message
-	msg := extractErrorMessage(err)
-	if msg != "" {
-		fmt.Fprintf(stderr, "   %s\n", msg)
-	} else {
-		fmt.Fprintf(stderr, "   %v\n", err)
-	}
-}
-
-func printParsingError(err error, stderr io.Writer) {
-	filePath := extractFilePath(err)
-	if filePath != "" {
-		errorColor.Fprintf(stderr, "🔍 Syntax error in %s:\n", fileColor.Sprint(filePath))
-	} else {
-		errorColor.Fprintf(stderr, "🔍 Syntax error:\n")
-	}
-
-	msg := extractErrorMessage(err)
-	if msg != "" {
-		fmt.Fprintf(stderr, "   %s\n", msg)
-	} else {
-		fmt.Fprintf(stderr, "   %v\n", err)
-	}
-
-	infoColor.Fprintf(stderr, "   Check for missing quotes, brackets, or invalid HCL syntax.\n")
-}
-
-func printFormattingError(err error, stderr io.Writer) {
-	filePath := extractFilePath(err)
-	if filePath != "" {
-		errorColor.Fprintf(stderr, "🎨 Formatting error in %s:\n", fileColor.Sprint(filePath))
-	} else {
-		errorColor.Fprintf(stderr, "🎨 Formatting error:\n")
-	}
-
-	msg := extractErrorMessage(err)
-	if msg != "" {
-		fmt.Fprintf(stderr, "   %s\n", msg)
-	} else {
-		fmt.Fprintf(stderr, "   %v\n", err)
-	}
-
-	// Check if it's a terraform not found error
-	if formattingutil.IsTerraformNotFoundError(err) {
-		infoColor.Fprintf(stderr, "   Make sure 'terraform' is installed and available in your PATH.\n")
-	}
-}
-
-func printSortingError(err error, stderr io.Writer) {
-	filePath := extractFilePath(err)
-	if filePath != "" {
-		errorColor.Fprintf(stderr, "📊 Sorting error in %s:\n", fileColor.Sprint(filePath))
-	} else {
-		errorColor.Fprintf(stderr, "📊 Sorting error:\n")
-	}
-
-	msg := extractErrorMessage(err)
-	if msg != "" {
-		fmt.Fprintf(stderr, "   %s\n", msg)
-	} else {
-		fmt.Fprintf(stderr, "   %v\n", err)
-	}
-}
-
-func printGenericError(err error, stderr io.Writer) {
-	errorColor.Fprintf(stderr, "❌ Error: %v\n", err)
-}
-
-// Helper functions to extract information from errors
-func extractFilePath(err error) string {
-	errStr := err.Error()
-
-	// Look for file paths in common error patterns
-	patterns := []string{
-		"failed to read file:",
-		"failed to parse",
-		"error in",
-		"validation error in",
-		"syntax error in",
-		"formatting error in",
-		"sorting error in",
-	}
-
-	for _, pattern := range patterns {
-		if idx := strings.Index(errStr, pattern); idx != -1 {
-			// Extract the file path after the pattern
-			afterPattern := errStr[idx+len(pattern):]
-			// Clean up the path (remove extra text, quotes, etc.)
-			path := strings.TrimSpace(afterPattern)
-			path = strings.Trim(path, " :")
-			path = strings.Trim(path, `"'`)
-			return path
-		}
-	}
-
-	// Try to extract from specific error types
-	if fileutil.IsNotExistError(err) {
-		return fileutil.GetFileUtilErrorPath(err)
-	}
-
-	return ""
-}
-
-func extractErrorMessage(err error) string {
-	errStr := err.Error()
-
-	// Remove common prefixes to get the core message
-	prefixes := []string{
-		"failed to read file:",
-		"failed to parse",
-		"error in",
-		"validation error in",
-		"syntax error in",
-		"formatting error in",
-		"sorting error in",
-	}
-
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(errStr, prefix) {
-			msg := strings.TrimPrefix(errStr, prefix)
-			msg = strings.TrimSpace(msg)
-			msg = strings.Trim(msg, " :")
-			return msg
-		}
-	}
-
-	return errStr
-}
-
-// printSuccess prints a success message with color
-func printSuccess(format string, args ...interface{}) {
-	successColor.Printf(format, args...)
-}
-
-// printInfo prints an info message with color
-func printInfo(format string, args ...interface{}) {
-	infoColor.Printf(format, args...)
-}
-
-// printWarning prints a warning message with color
-func printWarning(format string, args ...interface{}) {
-	warningColor.Printf(format, args...)
-}
-
-// printFile prints a file path with color
-func printFile(format string, args ...interface{}) {
-	fileColor.Printf(format, args...)
-}
-
-// Error helper functions
-
-// IsCLIError checks if an error is a CLIError
-func IsCLIError(err error) bool {
-	_, ok := err.(*CLIError)
-	return ok
-}
-
-// GetCLIErrorOp extracts the operation from a CLIError
-func GetCLIErrorOp(err error) string {
-	if cliErr, ok := err.(*CLIError); ok {
-		return cliErr.Op
-	}
-	return ""
-}
-
+// printUnifiedDiff prints a unified diff between two file contents
 func printUnifiedDiff(a, b, filePath string, out io.Writer) {
 	if a == b {
 		fmt.Fprintf(out, "(No changes)\n")
