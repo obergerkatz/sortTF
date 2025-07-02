@@ -1,0 +1,12 @@
+resource"aws_lb_listener""front_end"{
+default_action{
+target_group_arn="arn"
+type="forward"
+forward{
+target_group{
+arn="arn"
+weight=1
+}
+}
+}
+} 
