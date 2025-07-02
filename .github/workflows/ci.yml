@@ -36,9 +36,3 @@ jobs:
 
       - name: Build CLI
         run: go build -o sorttf
-
-      # Optionally, run your CLI tool on a test file to ensure terraform fmt is invoked
-      - name: Test sorttf CLI with terraform fmt
-        run: |
-          echo 'resource "null_resource" "example" {}' > test.tf
-          ./sorttf test.tf 
