@@ -12,6 +12,67 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
+func skipIfTerraformNotFound(t *testing.T, err error) {
+	t.Helper()
+	if IsTerraformNotFoundError(err) {
+		t.Skip("terraform command not available, skipping test")
+	}
+}
+
+func TestFormatHCLFile_AttributeTypes(t *testing.T) {
+	tests := []struct {
+		name     string
+		attrName string
+		value    cty.Value
+		expected string
+	}{
+		{"string", "foo", cty.StringVal("bar"), "foo = \"bar\""},
+		{"int", "count", cty.NumberIntVal(3), "count = 3"},
+		{"float", "port", cty.NumberFloatVal(8080.5), "port = 8080.5"},
+		{"bool true", "enabled", cty.BoolVal(true), "enabled = true"},
+		{"bool false", "disabled", cty.BoolVal(false), "disabled = false"},
+		{"list", "ports", cty.ListVal([]cty.Value{cty.NumberIntVal(80), cty.NumberIntVal(443)}), "ports = ["},
+		{"map", "tags", cty.MapVal(map[string]cty.Value{"Name": cty.StringVal("example")}), "tags = {"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := hclwrite.NewEmptyFile()
+			f.Body().SetAttributeValue(tt.attrName, tt.value)
+			formatted, err := FormatHCLFile(f)
+			skipIfTerraformNotFound(t, err)
+			if err != nil {
+				t.Fatalf("FormatHCLFile failed: %v", err)
+			}
+			if !strings.Contains(formatted, tt.expected) {
+				t.Errorf("Expected formatted output to contain %q, got: %q", tt.expected, formatted)
+			}
+		})
+	}
+}
+
+func TestFormatHCLFile_ErrorCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		file    *hclwrite.File
+		wantErr bool
+	}{
+		{"nil file", nil, true},
+		{"empty file", hclwrite.NewEmptyFile(), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := FormatHCLFile(tt.file)
+			if tt.wantErr && err == nil {
+				t.Error("Expected error for nil file")
+			}
+			if !tt.wantErr && err != nil {
+				skipIfTerraformNotFound(t, err)
+				t.Errorf("Did not expect error for %s: %v", tt.name, err)
+			}
+		})
+	}
+}
+
 func TestFormatHCLFile(t *testing.T) {
 	f := hclwrite.NewEmptyFile()
 	body := f.Body()

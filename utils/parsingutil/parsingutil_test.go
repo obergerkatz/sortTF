@@ -8,6 +8,31 @@ import (
 	"github.com/hashicorp/hcl/v2"
 )
 
+// Helper: check error presence
+func assertError(t *testing.T, err error, shouldErr bool, checker func(error) bool) {
+	t.Helper()
+	if shouldErr && err == nil {
+		t.Fatalf("Expected error, got nil")
+	}
+	if !shouldErr && err != nil {
+		t.Fatalf("Did not expect error, got %v", err)
+	}
+	if checker != nil && err != nil && !checker(err) {
+		t.Fatalf("Error did not match checker, got: %T", err)
+	}
+}
+
+// Helper: check diagnostics
+func assertDiagnostics(t *testing.T, diags hcl.Diagnostics, shouldDiag bool) {
+	t.Helper()
+	if shouldDiag && !diags.HasErrors() {
+		t.Errorf("Expected diagnostics errors, got none")
+	}
+	if !shouldDiag && diags.HasErrors() {
+		t.Errorf("Expected no diagnostics errors, got: %v", diags)
+	}
+}
+
 func TestParseHCLFileValid(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_Valid.tf")
 	parsed, err := ParseHCLFile(path)
@@ -177,12 +202,7 @@ func TestParseHCLFileOnlyString(t *testing.T) {
 func TestParseHCLFileOnlyNumber(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_OnlyNumber.tf")
 	parsed, err := ParseHCLFile(path)
-	if err == nil {
-		t.Fatalf("Expected error for only number, got none")
-	}
-	if !IsHCLParseError(err) {
-		t.Fatalf("Expected HCLParseError, got: %T", err)
-	}
+	assertError(t, err, true, IsHCLParseError)
 	if parsed == nil {
 		t.Fatalf("Expected parsed file even with errors, got nil")
 	}
@@ -191,40 +211,27 @@ func TestParseHCLFileOnlyNumber(t *testing.T) {
 func TestParseHCLFileUnicodeCharacters(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_UnicodeCharacters.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no error for unicode characters, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	if parsed == nil || parsed.File == nil {
 		t.Fatalf("Expected parsed file, got nil")
 	}
-	if parsed.Diags.HasErrors() {
-		t.Errorf("Expected no diagnostics errors, got: %v", parsed.Diags)
-	}
+	assertDiagnostics(t, parsed.Diags, false)
 }
 
 func TestParseHCLFileWeirdIdentifiers(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_WeirdIdentifiers.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no error for weird identifiers, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	if parsed == nil || parsed.File == nil {
 		t.Fatalf("Expected parsed file, got nil")
 	}
-	if parsed.Diags.HasErrors() {
-		t.Errorf("Expected no diagnostics errors, got: %v", parsed.Diags)
-	}
+	assertDiagnostics(t, parsed.Diags, false)
 }
 
 func TestParseHCLFileAttributeWithoutValue(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_AttributeWithoutValue.tf")
 	parsed, err := ParseHCLFile(path)
-	if err == nil {
-		t.Fatalf("Expected error for attribute without value, got none")
-	}
-	if !IsHCLParseError(err) {
-		t.Fatalf("Expected HCLParseError, got: %T", err)
-	}
+	assertError(t, err, true, IsHCLParseError)
 	if parsed == nil {
 		t.Fatalf("Expected parsed file even with errors, got nil")
 	}
@@ -233,196 +240,132 @@ func TestParseHCLFileAttributeWithoutValue(t *testing.T) {
 func TestParseHCLFileBlockWithoutLabel(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_BlockWithoutLabel.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Unexpected parse error: %v", err)
-	}
+	assertError(t, err, false, nil)
 	err = ValidateRequiredBlockLabels(parsed)
-	if err == nil {
-		t.Fatalf("Expected validation error for block without label, got none")
-	}
-	if !IsValidationError(err) {
-		t.Fatalf("Expected ValidationError, got: %T", err)
-	}
+	assertError(t, err, true, IsValidationError)
 }
 
 func TestParseHCLFileOutputBlock(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_OutputBlock.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no error for output block, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	if parsed == nil || parsed.File == nil {
 		t.Fatalf("Expected parsed file, got nil")
 	}
-	if parsed.Diags.HasErrors() {
-		t.Errorf("Expected no diagnostics errors, got: %v", parsed.Diags)
-	}
+	assertDiagnostics(t, parsed.Diags, false)
 }
 
 func TestParseHCLFileProviderBlock(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_ProviderBlock.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no error for provider block, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	if parsed == nil || parsed.File == nil {
 		t.Fatalf("Expected parsed file, got nil")
 	}
-	if parsed.Diags.HasErrors() {
-		t.Errorf("Expected no diagnostics errors, got: %v", parsed.Diags)
-	}
+	assertDiagnostics(t, parsed.Diags, false)
 }
 
 func TestParseHCLFileResourceBlock(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_ResourceBlock.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no error for resource block, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	if parsed == nil || parsed.File == nil {
 		t.Fatalf("Expected parsed file, got nil")
 	}
-	if parsed.Diags.HasErrors() {
-		t.Errorf("Expected no diagnostics errors, got: %v", parsed.Diags)
-	}
+	assertDiagnostics(t, parsed.Diags, false)
 }
 
 func TestParseHCLFileTerraformBlock(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_TerraformBlock.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no error for terraform block, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	if parsed == nil || parsed.File == nil {
 		t.Fatalf("Expected parsed file, got nil")
 	}
-	if parsed.Diags.HasErrors() {
-		t.Errorf("Expected no diagnostics errors, got: %v", parsed.Diags)
-	}
+	assertDiagnostics(t, parsed.Diags, false)
 }
 
 func TestParseHCLFileVariableBlock(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_VariableBlock.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no error for variable block, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	if parsed == nil || parsed.File == nil {
 		t.Fatalf("Expected parsed file, got nil")
 	}
-	if parsed.Diags.HasErrors() {
-		t.Errorf("Expected no diagnostics errors, got: %v", parsed.Diags)
-	}
+	assertDiagnostics(t, parsed.Diags, false)
 }
 
 func TestParseHCLFileModuleBlock(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_ModuleBlock.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no error for module block, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	if parsed == nil || parsed.File == nil {
 		t.Fatalf("Expected parsed file, got nil")
 	}
-	if parsed.Diags.HasErrors() {
-		t.Errorf("Expected no diagnostics errors, got: %v", parsed.Diags)
-	}
+	assertDiagnostics(t, parsed.Diags, false)
 }
 
 func TestParseHCLFileLocalsBlock(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_LocalsBlock.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no error for locals block, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	if parsed == nil || parsed.File == nil {
 		t.Fatalf("Expected parsed file, got nil")
 	}
-	if parsed.Diags.HasErrors() {
-		t.Errorf("Expected no diagnostics errors, got: %v", parsed.Diags)
-	}
+	assertDiagnostics(t, parsed.Diags, false)
 }
 
 func TestParseHCLFileDataBlock(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_DataBlock.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no error for data block, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	if parsed == nil || parsed.File == nil {
 		t.Fatalf("Expected parsed file, got nil")
 	}
-	if parsed.Diags.HasErrors() {
-		t.Errorf("Expected no diagnostics errors, got: %v", parsed.Diags)
-	}
+	assertDiagnostics(t, parsed.Diags, false)
 }
 
 func TestParseHCLFileBackendBlock(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_BackendBlock.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no error for backend block, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	if parsed == nil || parsed.File == nil {
 		t.Fatalf("Expected parsed file, got nil")
 	}
-	if parsed.Diags.HasErrors() {
-		t.Errorf("Expected no diagnostics errors, got: %v", parsed.Diags)
-	}
+	assertDiagnostics(t, parsed.Diags, false)
 }
 
 func TestParseHCLFileNestedBlocks(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_NestedBlocks.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no error for nested blocks, got: %v", err)
-	}
-	if parsed.Diags.HasErrors() {
-		t.Errorf("Expected no diagnostics errors, got: %v", parsed.Diags)
-	}
+	assertError(t, err, false, nil)
+	assertDiagnostics(t, parsed.Diags, false)
 	err = ValidateRequiredBlockLabels(parsed)
-	if err != nil {
-		t.Errorf("Expected no validation errors, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 }
 
 func TestParseHCLFileExtraLabels(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_ExtraLabels.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no parse error, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	err = ValidateRequiredBlockLabels(parsed)
-	if err == nil {
-		t.Fatalf("Expected validation errors for extra labels, got none")
-	}
-	if !IsValidationError(err) {
-		t.Fatalf("Expected ValidationError, got: %T", err)
-	}
+	assertError(t, err, true, IsValidationError)
 }
 
 func TestParseHCLFileProviderWithExtraLabels(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_ProviderWithExtraLabels.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no parse error, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	err = ValidateRequiredBlockLabels(parsed)
-	if err == nil {
-		t.Fatalf("Expected validation error for provider with extra labels, got none")
-	}
+	assertError(t, err, true, nil)
 }
 
 func TestParseHCLFileInvalidBackend(t *testing.T) {
 	path := filepath.Join("testdata", "TestParseHCLFile_InvalidBackend.tf")
 	parsed, err := ParseHCLFile(path)
-	if err != nil {
-		t.Fatalf("Expected no parse error, got: %v", err)
-	}
+	assertError(t, err, false, nil)
 	err = ValidateRequiredBlockLabels(parsed)
-	if err == nil {
-		t.Fatalf("Expected validation error for backend outside terraform, got none")
-	}
+	assertError(t, err, true, nil)
 }
 
 func TestParseHCLFileComplexNestedBlocks(t *testing.T) {
@@ -678,4 +621,68 @@ func TestErrorHelperFunctions(t *testing.T) {
 	if GetValidationErrorPath(fmt.Errorf("regular error")) != "" {
 		t.Error("GetValidationErrorPath should return empty string for non-ValidationError")
 	}
+}
+
+func TestParseHCLFile_TableDriven(t *testing.T) {
+	tests := []struct {
+		name         string
+		filename     string
+		expectErr    bool
+		expectDiag   bool
+		errorChecker func(error) bool
+	}{
+		{"valid", "TestParseHCLFile_Valid.tf", false, false, nil},
+		{"invalid", "TestParseHCLFile_Invalid.tf", true, true, IsHCLParseError},
+		{"empty", "TestParseHCLFile_EmptyFile.tf", false, false, nil},
+		{"whitespace only", "TestParseHCLFile_WhitespaceOnly.tf", false, false, nil},
+		{"comment only", "TestParseHCLFile_CommentOnly.tf", false, false, nil},
+		{"multiple resources", "TestParseHCLFile_MultipleResources.tf", false, false, nil},
+		{"unclosed string", "TestParseHCLFile_UnclosedString.tf", true, true, IsHCLParseError},
+		{"only braces", "TestParseHCLFile_OnlyBraces.tf", true, true, IsHCLParseError},
+		{"deeply nested", "TestParseHCLFile_DeeplyNestedBlocks.tf", false, false, nil},
+		{"only string", "TestParseHCLFile_OnlyString.tf", true, true, IsHCLParseError},
+		{"only number", "TestParseHCLFile_OnlyNumber.tf", true, true, IsHCLParseError},
+		{"unicode", "TestParseHCLFile_UnicodeCharacters.tf", false, false, nil},
+		{"weird identifiers", "TestParseHCLFile_WeirdIdentifiers.tf", false, false, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join("testdata", tt.filename)
+			parsed, err := ParseHCLFile(path)
+			assertError(t, err, tt.expectErr, tt.errorChecker)
+			if parsed == nil {
+				t.Fatalf("Expected parsed file, got nil")
+			}
+			assertDiagnostics(t, parsed.Diags, tt.expectDiag)
+		})
+	}
+}
+
+func TestParseHCLFile_ErrorCases(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		checkErr func(error) bool
+	}{
+		{"not exist", "/non/existent/file.tf", IsNotExistError},
+		{"empty path", "", IsParsingError},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ParseHCLFile(tt.path)
+			if err == nil {
+				t.Fatalf("Expected error, got nil")
+			}
+			if !tt.checkErr(err) {
+				t.Fatalf("Error did not match checker, got: %T", err)
+			}
+		})
+	}
+}
+
+func isNilOrChecker(err error, checker func(error) bool) bool {
+	if checker == nil {
+		return true
+	}
+	return checker(err)
 }
