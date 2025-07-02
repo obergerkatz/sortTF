@@ -17,7 +17,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.24.4'
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
@@ -27,8 +27,13 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.54.2
+
+
       - name: Run linter
-        run: go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
+        run: golangci-lint run
 
       - name: Run tests
         run: go test ./...
