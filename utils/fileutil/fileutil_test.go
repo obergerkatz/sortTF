@@ -161,12 +161,24 @@ func TestIsValidFileEdgeCases(t *testing.T) {
 
 func TestFindFiles(t *testing.T) {
 	dir := t.TempDir()
-	os.Mkdir(filepath.Join(dir, ".terraform"), 0755)
-	os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "main.hcl"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, ".terraform.lock.hcl"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "ignore.txt"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, ".terraform", "should_ignore.tf"), []byte(""), 0644)
+	if err := os.Mkdir(filepath.Join(dir, ".terraform"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "main.hcl"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".terraform.lock.hcl"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "ignore.txt"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".terraform", "should_ignore.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	files, err := FindFiles(dir, false)
 	if err != nil {
@@ -214,13 +226,21 @@ func TestFindFilesRecursiveEdgeCases(t *testing.T) {
 
 	// Create nested structure with various file types
 	os.MkdirAll(filepath.Join(dir, "subdir", "deep"), 0755)
-	os.WriteFile(filepath.Join(dir, "subdir", "deep", "nested.tf"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "subdir", "deep", "nested.hcl"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "subdir", "deep", "ignore.txt"), []byte(""), 0644)
+	if err := os.WriteFile(filepath.Join(dir, "subdir", "deep", "nested.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "subdir", "deep", "nested.hcl"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "subdir", "deep", "ignore.txt"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Create .terraform directory in subdirectory
 	os.Mkdir(filepath.Join(dir, "subdir", ".terraform"), 0755)
-	os.WriteFile(filepath.Join(dir, "subdir", ".terraform", "should_ignore.tf"), []byte(""), 0644)
+	if err := os.WriteFile(filepath.Join(dir, "subdir", ".terraform", "should_ignore.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	files, err := FindFiles(dir, true)
 	if err != nil {
@@ -244,17 +264,31 @@ func TestFindFilesFileNameEdgeCases(t *testing.T) {
 	dir := t.TempDir()
 
 	// Test with files that have dots in names
-	os.WriteFile(filepath.Join(dir, "my.config.tf"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "terraform.backup.tf"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "config.backup.hcl"), []byte(""), 0644)
+	if err := os.WriteFile(filepath.Join(dir, "my.config.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "terraform.backup.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "config.backup.hcl"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Test with files that start with dots
-	os.WriteFile(filepath.Join(dir, ".env.tf"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, ".config.hcl"), []byte(""), 0644)
+	if err := os.WriteFile(filepath.Join(dir, ".env.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".config.hcl"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Test with files that have spaces
-	os.WriteFile(filepath.Join(dir, "my file.tf"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "config file.hcl"), []byte(""), 0644)
+	if err := os.WriteFile(filepath.Join(dir, "my file.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "config file.hcl"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	files, err := FindFiles(dir, false)
 	if err != nil {
@@ -277,25 +311,51 @@ func TestFindFilesIntegration(t *testing.T) {
 	os.MkdirAll(filepath.Join(dir, "environments", "prod"), 0755)
 
 	// Main files
-	os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "variables.tf"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "outputs.tf"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "terragrunt.hcl"), []byte(""), 0644)
+	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "variables.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "outputs.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "terragrunt.hcl"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Module files
-	os.WriteFile(filepath.Join(dir, "modules", "vpc", "main.tf"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "modules", "vpc", "variables.tf"), []byte(""), 0644)
+	if err := os.WriteFile(filepath.Join(dir, "modules", "vpc", "main.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "modules", "vpc", "variables.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Environment files
-	os.WriteFile(filepath.Join(dir, "environments", "dev", "main.tf"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "environments", "dev", "terragrunt.hcl"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "environments", "prod", "main.tf"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, "environments", "prod", "terragrunt.hcl"), []byte(""), 0644)
+	if err := os.WriteFile(filepath.Join(dir, "environments", "dev", "main.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "environments", "dev", "terragrunt.hcl"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "environments", "prod", "main.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "environments", "prod", "terragrunt.hcl"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Files that should be ignored
-	os.WriteFile(filepath.Join(dir, "README.md"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(""), 0644)
-	os.WriteFile(filepath.Join(dir, ".terraform.lock.hcl"), []byte(""), 0644)
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".terraform.lock.hcl"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	files, err := FindFiles(dir, true)
 	if err != nil {
@@ -317,15 +377,21 @@ func TestFindFilesPerformance(t *testing.T) {
 	// Create many files to test performance
 	for i := 0; i < 1000; i++ {
 		if i%2 == 0 {
-			os.WriteFile(filepath.Join(dir, fmt.Sprintf("file%d.tf", i)), []byte(""), 0644)
+			if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("file%d.tf", i)), []byte(""), 0644); err != nil {
+				t.Fatal(err)
+			}
 		} else {
-			os.WriteFile(filepath.Join(dir, fmt.Sprintf("file%d.hcl", i)), []byte(""), 0644)
+			if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("file%d.hcl", i)), []byte(""), 0644); err != nil {
+				t.Fatal(err)
+			}
 		}
 	}
 
 	// Add some non-target files
 	for i := 0; i < 100; i++ {
-		os.WriteFile(filepath.Join(dir, fmt.Sprintf("file%d.txt", i)), []byte(""), 0644)
+		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("file%d.txt", i)), []byte(""), 0644); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	start := time.Now()
@@ -395,7 +461,9 @@ func TestValidateFilePath(t *testing.T) {
 
 	// Test with valid file
 	file := filepath.Join(dir, "test.tf")
-	os.WriteFile(file, []byte(""), 0644)
+	if err := os.WriteFile(file, []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 	err = ValidateFilePath(file)
 	if err != nil {
 		t.Errorf("Expected no error for valid file, got: %v", err)
@@ -424,7 +492,9 @@ func TestValidateDirectoryPath(t *testing.T) {
 	// Test with file (should fail)
 	dir := t.TempDir()
 	file := filepath.Join(dir, "test.tf")
-	os.WriteFile(file, []byte(""), 0644)
+	if err := os.WriteFile(file, []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
 	err = ValidateDirectoryPath(file)
 	if err == nil {
 		t.Error("Expected error for file path")
