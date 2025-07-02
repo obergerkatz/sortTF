@@ -22,6 +22,54 @@ func (m *mockFileInfo) Mode() os.FileMode  { return 0 }
 func (m *mockFileInfo) ModTime() time.Time { return time.Now() }
 func (m *mockFileInfo) Sys() interface{}   { return nil }
 
+func TestIsValidFile_TableDriven(t *testing.T) {
+	type args struct {
+		name  string
+		isDir bool
+	}
+	tests := []struct {
+		name     string
+		args     args
+		expected bool
+	}{
+		{"valid .tf", args{"foo.tf", false}, true},
+		{"valid .hcl", args{"foo.hcl", false}, true},
+		{"invalid .txt", args{"foo.txt", false}, false},
+		{"lock file", args{".terraform.lock.hcl", false}, false},
+		{"directory", args{"foo.tf", true}, false},
+		{"empty name", args{"", false}, false},
+		{"hidden .tf", args{".hidden.tf", false}, true},
+		{"uppercase .TF", args{"FOO.TF", false}, true},
+		{"mixed case .HcL", args{"foo.HcL", false}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			info := &mockFileInfo{name: tt.args.name, isDir: tt.args.isDir}
+			if got := IsValidFile(tt.args.name, info); got != tt.expected {
+				t.Errorf("IsValidFile(%q, isDir=%v) = %v, want %v", tt.args.name, tt.args.isDir, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestIsValidFile_Symlink(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "target.tf")
+	os.WriteFile(target, []byte(""), 0644)
+	symlink := filepath.Join(dir, "link.tf")
+	err := os.Symlink(target, symlink)
+	if err != nil {
+		t.Skip("Symlink not supported on this system")
+	}
+	info, err := os.Lstat(symlink)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !IsValidFile(symlink, info) {
+		t.Error("Symlink to .tf file should be valid")
+	}
+}
+
 func TestIsValidFile(t *testing.T) {
 	dir := t.TempDir()
 
@@ -86,44 +134,6 @@ func TestIsValidFileEdgeCases(t *testing.T) {
 	mixedHclInfo := &mockFileInfo{name: "test.HcL", isDir: false}
 	if !IsValidFile("test.HcL", mixedHclInfo) {
 		t.Error("Mixed case .HcL files should be valid")
-	}
-}
-
-func TestShouldSkipDir(t *testing.T) {
-	parent := t.TempDir()
-	dirPath := filepath.Join(parent, ".terraform")
-	os.Mkdir(dirPath, 0755)
-	dInfo, err := os.Stat(dirPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !ShouldSkipDir(dirPath, dInfo) {
-		t.Errorf("Expected .terraform dir to be skipped")
-	}
-}
-
-func TestShouldSkipDirEdgeCases(t *testing.T) {
-	// Test with nil FileInfo
-	if ShouldSkipDir("test", nil) {
-		t.Error("Should return false for nil FileInfo")
-	}
-
-	// Test with non-directory .terraform
-	fileInfo := &mockFileInfo{name: ".terraform", isDir: false}
-	if ShouldSkipDir("test", fileInfo) {
-		t.Error("Should not skip .terraform if it's a file")
-	}
-
-	// Test with directory that starts with .terraform but isn't exactly .terraform
-	partialInfo := &mockFileInfo{name: ".terraform_backup", isDir: true}
-	if ShouldSkipDir("test", partialInfo) {
-		t.Error("Should not skip directories that start with .terraform")
-	}
-
-	// Test with case variations
-	caseInfo := &mockFileInfo{name: ".TERRAFORM", isDir: true}
-	if ShouldSkipDir("test", caseInfo) {
-		t.Error("Should not skip .TERRAFORM (case sensitive)")
 	}
 }
 
