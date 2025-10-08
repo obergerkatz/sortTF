@@ -48,7 +48,7 @@ func ShouldSkipDir(path string, info os.FileInfo) bool {
 	if info == nil {
 		return false
 	}
-	return info.IsDir() && info.Name() == ".terraform"
+	return info.IsDir() && (info.Name() == ".terraform" || info.Name() == ".terragrunt-cache")
 }
 
 // FindFiles recursively or non-recursively finds all valid Terraform and Terragrunt files
