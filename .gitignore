@@ -461,3 +461,9 @@ MigrationBackup/
 
 # IDEA
 .idea/
+
+# Build artifacts
+dist/
+sorttf
+sorttf.exe
+sorttf-*

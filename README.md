@@ -160,6 +160,40 @@ go fmt ./...
 go test -cover ./...
 ```
 
+### Releases
+
+Releases are automatically built and published when tags are pushed to the repository. The GitHub Actions workflow builds binaries for multiple platforms:
+
+- **Linux**: amd64, arm64
+- **macOS**: amd64, arm64 (Intel and Apple Silicon)
+- **Windows**: amd64, arm64
+
+#### Creating a Release
+
+1. **Tag the release:**
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+2. **The GitHub Actions workflow will automatically:**
+   - Build binaries for all supported platforms
+   - Generate checksums for all binaries
+   - Create a GitHub release with the binaries attached
+   - Generate release notes
+
+#### Local Testing
+
+To test the release build process locally:
+
+```bash
+# Build for all platforms
+./scripts/build-release.sh v1.0.0-test
+
+# Binaries will be created in the dist/ directory
+ls -la dist/
+```
+
 ## 🤝 Contributing
 
 1. Fork the repository
