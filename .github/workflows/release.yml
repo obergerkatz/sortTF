@@ -1,100 +1,100 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
-    branches:
-      - 'release/*'
-  release:
-    types: [created]
+    push:
+        tags:
+            - "v*"
+        branches:
+            - "release/*"
+    release:
+        types: [created]
 
 permissions:
-  contents: write
+    contents: write
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # Build for multiple OS and architectures
-        include:
-          - goos: linux
-            goarch: amd64
-            output: sorttf-linux-amd64
-          - goos: linux
-            goarch: arm64
-            output: sorttf-linux-arm64
-          - goos: windows
-            goarch: amd64
-            output: sorttf-windows-amd64.exe
-          - goos: windows
-            goarch: arm64
-            output: sorttf-windows-arm64.exe
-          - goos: darwin
-            goarch: amd64
-            output: sorttf-darwin-amd64
-          - goos: darwin
-            goarch: arm64
-            output: sorttf-darwin-arm64
+    build:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                # Build for multiple OS and architectures
+                include:
+                    - goos: linux
+                      goarch: amd64
+                      output: sorttf-linux-amd64
+                    - goos: linux
+                      goarch: arm64
+                      output: sorttf-linux-arm64
+                    - goos: windows
+                      goarch: amd64
+                      output: sorttf-windows-amd64.exe
+                    - goos: windows
+                      goarch: arm64
+                      output: sorttf-windows-arm64.exe
+                    - goos: darwin
+                      goarch: amd64
+                      output: sorttf-darwin-amd64
+                    - goos: darwin
+                      goarch: arm64
+                      output: sorttf-darwin-arm64
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.24.4'
+            - name: Set up Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version: "1.24.4"
 
-      - name: Install dependencies
-        run: go mod download
+            - name: Install dependencies
+              run: go mod download
 
-      - name: Run tests
-        run: go test ./...
+            - name: Run tests
+              run: go test ./...
 
-      - name: Build binary
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: 0
-        run: |
-          go build -ldflags="-s -w -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o ${{ matrix.output }} .
+            - name: Build binary
+              env:
+                  GOOS: ${{ matrix.goos }}
+                  GOARCH: ${{ matrix.goarch }}
+                  CGO_ENABLED: 0
+              run: |
+                  go build -ldflags="-s -w -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o ${{ matrix.output }} .
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.output }}
-          path: ${{ matrix.output }}
+            - name: Upload artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ matrix.output }}
+                  path: ${{ matrix.output }}
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: ./artifacts
+    release:
+        needs: build
+        runs-on: ubuntu-latest
+        if: startsWith(github.ref, 'refs/tags/')
 
-      - name: Display structure of downloaded files
-        run: ls -R ./artifacts
+        steps:
+            - name: Download all artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  path: ./artifacts
 
-      - name: Create checksums
-        run: |
-          cd ./artifacts
-          find . -name "sorttf-*" -type f -exec sha256sum {} \; > checksums.txt
-          cat checksums.txt
+            - name: Display structure of downloaded files
+              run: ls -R ./artifacts
 
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            ./artifacts/*/sorttf-*
-            ./artifacts/checksums.txt
-          generate_release_notes: true
-          draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Create checksums
+              run: |
+                  cd ./artifacts
+                  find . -name "sorttf-*" -type f -exec sha256sum {} \; > checksums.txt
+                  cat checksums.txt
+
+            - name: Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  files: |
+                      ./artifacts/*/sorttf-*
+                      ./artifacts/checksums.txt
+                  generate_release_notes: true
+                  draft: false
+                  prerelease: ${{ contains(github.ref_name, '-') }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
