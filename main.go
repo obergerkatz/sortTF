@@ -2,9 +2,10 @@ package main
 
 import (
 	"os"
-	"sorttf/utils/cliutil"
+
+	"sorttf/cli"
 )
 
 func main() {
-	os.Exit(cliutil.RunCLI(os.Args[1:]))
+	os.Exit(cli.RunCLI(os.Args[1:]))
 }

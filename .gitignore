@@ -461,3 +461,4 @@ MigrationBackup/
 
 # IDEA
 .idea/
+.DS_Store
