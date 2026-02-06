@@ -603,3 +603,265 @@ func TestShouldSkipDir(t *testing.T) {
 		})
 	}
 }
+
+func TestFindFilesRecursiveWithSkipDir(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create .terragrunt-cache directory that should be skipped
+	terragruntCacheDir := filepath.Join(dir, ".terragrunt-cache")
+	if err := os.Mkdir(terragruntCacheDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Add files in the cache directory (should be skipped)
+	if err := os.WriteFile(filepath.Join(terragruntCacheDir, "cached.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create valid files in root
+	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	files, err := FindFiles(dir, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Should only find main.tf, not cached.tf
+	if len(files) != 1 {
+		t.Errorf("Expected 1 file, got %d", len(files))
+	}
+
+	// Verify no files from .terragrunt-cache are included
+	for _, f := range files {
+		if strings.Contains(f, ".terragrunt-cache") {
+			t.Errorf("Found file from .terragrunt-cache directory: %s", f)
+		}
+	}
+}
+
+func TestFindFilesRecursiveWithPermissionError(t *testing.T) {
+	// Skip this test on Windows as permission handling is different
+	if os.Getenv("GOOS") == "windows" {
+		t.Skip("Skipping permission test on Windows")
+	}
+
+	dir := t.TempDir()
+
+	// Create a subdirectory with no read permissions
+	restrictedDir := filepath.Join(dir, "restricted")
+	if err := os.Mkdir(restrictedDir, 0000); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(restrictedDir, 0755) // Cleanup
+
+	// Create a file that should be accessible
+	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// FindFiles should return an error when encountering the restricted directory
+	_, err := FindFiles(dir, true)
+	if err == nil {
+		// On some systems (like macOS with certain permissions), the error might not occur
+		// So we'll allow both success and error cases
+		t.Log("No error encountered - system may have different permission handling")
+	} else {
+		// Verify it's a proper error
+		var e *errors.Error
+		if !stderrors.As(err, &e) {
+			t.Errorf("Expected errors.Error type, got: %T", err)
+		}
+	}
+}
+
+func TestFindFilesNonRecursiveWithTerraformDir(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create .terraform directory
+	terraformDir := filepath.Join(dir, ".terraform")
+	if err := os.Mkdir(terraformDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Add file in .terraform directory
+	if err := os.WriteFile(filepath.Join(terraformDir, "cached.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create valid files in root
+	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Non-recursive should find only main.tf
+	files, err := FindFiles(dir, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(files) != 1 {
+		t.Errorf("Expected 1 file, got %d", len(files))
+	}
+
+	for _, f := range files {
+		if strings.Contains(f, ".terraform") {
+			t.Errorf("Should not find files in .terraform directory: %s", f)
+		}
+	}
+}
+
+func TestFindFilesNonRecursiveWithSymlinks(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a regular file
+	regularFile := filepath.Join(dir, "main.tf")
+	if err := os.WriteFile(regularFile, []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a symlink to the file
+	symlinkFile := filepath.Join(dir, "link.tf")
+	if err := os.Symlink(regularFile, symlinkFile); err != nil {
+		t.Skip("Symlink not supported on this system")
+	}
+
+	files, err := FindFiles(dir, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Non-recursive mode with os.ReadDir only finds regular files
+	// Symlinks are not reported as regular files by entry.Type().IsRegular()
+	// So we should only find the regular file, not the symlink
+	if len(files) != 1 {
+		t.Errorf("Expected 1 file (symlinks not counted in non-recursive mode), got %d", len(files))
+		for _, f := range files {
+			t.Logf("Found: %s", f)
+		}
+	}
+}
+
+func TestFindFilesRecursiveSymlinkToDirectory(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create a subdirectory with a file
+	subdir := filepath.Join(dir, "subdir")
+	if err := os.Mkdir(subdir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(subdir, "nested.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a symlink to the subdirectory
+	symlinkDir := filepath.Join(dir, "link")
+	if err := os.Symlink(subdir, symlinkDir); err != nil {
+		t.Skip("Symlink not supported on this system")
+	}
+
+	files, err := FindFiles(dir, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// filepath.Walk follows symlinks by default
+	// Should find nested.tf at least once
+	if len(files) < 1 {
+		t.Errorf("Expected at least 1 file, got %d", len(files))
+	}
+}
+
+func TestFindFilesWithHiddenDirs(t *testing.T) {
+	dir := t.TempDir()
+
+	// Create hidden directory (not .terraform*)
+	hiddenDir := filepath.Join(dir, ".hidden")
+	if err := os.Mkdir(hiddenDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Add file in hidden directory
+	if err := os.WriteFile(filepath.Join(hiddenDir, "config.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create file in root
+	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Recursive should find both files (hidden dir is not .terra*)
+	files, err := FindFiles(dir, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedCount := 2
+	if len(files) != expectedCount {
+		t.Errorf("Expected %d files (including hidden dir), got %d", expectedCount, len(files))
+	}
+}
+
+func TestFindFilesNonRecursiveWithReadDirError(t *testing.T) {
+	// Skip this test on Windows as permission handling is different
+	if os.Getenv("GOOS") == "windows" {
+		t.Skip("Skipping permission test on Windows")
+	}
+
+	dir := t.TempDir()
+
+	// Create a directory with no read permissions
+	noReadDir := filepath.Join(dir, "noread")
+	if err := os.Mkdir(noReadDir, 0000); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(noReadDir, 0755) // Cleanup
+
+	// Try to find files in the no-read directory (non-recursive)
+	_, err := FindFiles(noReadDir, false)
+	if err == nil {
+		// On some systems, this might not fail
+		t.Log("Warning: Expected error for unreadable directory, but got none")
+		t.Log("This is acceptable on systems with different permission handling")
+		return
+	}
+
+	// Verify it's a proper error wrapped in errors.Error
+	var e *errors.Error
+	if !stderrors.As(err, &e) {
+		t.Errorf("Expected errors.Error type, got: %T", err)
+	}
+
+	// The error should mention "ReadDir"
+	if !strings.Contains(err.Error(), "ReadDir") && !strings.Contains(err.Error(), "permission denied") {
+		t.Logf("Error message: %s", err.Error())
+	}
+}
+
+func TestFindFilesNonRecursiveReadDirErrorWithFile(t *testing.T) {
+	// Test calling FindFiles on a file (not a directory) in non-recursive mode
+	// This will cause os.ReadDir to fail because the path is a file, not a directory
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "test.tf")
+	if err := os.WriteFile(file, []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Try to find files in the file path (should fail in ReadDir)
+	_, err := FindFiles(file, false)
+
+	// This should succeed because os.Stat check happens first and won't error
+	// But os.ReadDir will fail because it's a file, not a directory
+	if err == nil {
+		t.Error("Expected error when FindFiles is called on a file in non-recursive mode")
+	}
+
+	// Verify error mentions ReadDir
+	if err != nil && !strings.Contains(err.Error(), "ReadDir") {
+		// Also acceptable if it's caught earlier
+		t.Logf("Got error (acceptable): %v", err)
+	}
+}

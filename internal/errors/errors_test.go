@@ -373,3 +373,101 @@ func TestError_WithWrappedSentinels(t *testing.T) {
 		t.Errorf("Path = %q, want %q", e.Path, "test.tf")
 	}
 }
+
+// TestPrintError_AllErrorKinds tests PrintError with all error kinds
+func TestPrintError_AllErrorKinds(t *testing.T) {
+	tests := []struct {
+		name       string
+		err        *Error
+		wantOutput string
+	}{
+		{
+			name:       "KindValidation",
+			err:        NewWithKind("Validate", KindValidation, fmt.Errorf("invalid block")),
+			wantOutput: "Validation error",
+		},
+		{
+			name:       "KindFormatting",
+			err:        NewWithKind("Format", KindFormatting, fmt.Errorf("format failed")),
+			wantOutput: "Formatting error",
+		},
+		{
+			name:       "KindSorting",
+			err:        NewWithKind("Sort", KindSorting, fmt.Errorf("sort failed")),
+			wantOutput: "Sorting error",
+		},
+		{
+			name:       "KindCLI",
+			err:        NewWithKind("ParseArgs", KindCLI, fmt.Errorf("invalid args")),
+			wantOutput: "CLI error",
+		},
+		{
+			name:       "KindFileSystem with permission",
+			err:        NewWithKind("ReadFile", KindFileSystem, fmt.Errorf("%w", ErrPermissionDenied)),
+			wantOutput: "Permission denied",
+		},
+		{
+			name:       "KindFileSystem with os.Permission",
+			err:        NewWithKind("ReadFile", KindFileSystem, os.ErrPermission),
+			wantOutput: "Permission denied",
+		},
+		{
+			name:       "KindFileSystem other",
+			err:        NewWithKind("ReadFile", KindFileSystem, fmt.Errorf("disk error")),
+			wantOutput: "File error",
+		},
+		{
+			name:       "KindUnknown",
+			err:        NewWithKind("Unknown", KindUnknown, fmt.Errorf("unknown")),
+			wantOutput: "Error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			PrintError(tt.err, &buf)
+			got := buf.String()
+
+			if !strings.Contains(got, tt.wantOutput) {
+				t.Errorf("PrintError() output = %q, want to contain %q", got, tt.wantOutput)
+			}
+		})
+	}
+}
+
+// TestPrintError_SentinelErrors tests PrintError with all sentinel errors
+func TestPrintError_SentinelErrors(t *testing.T) {
+	tests := []struct {
+		name       string
+		err        error
+		wantOutput string
+	}{
+		{
+			name:       "ErrTerraformNotFound",
+			err:        fmt.Errorf("%w", ErrTerraformNotFound),
+			wantOutput: "Terraform not found",
+		},
+		{
+			name:       "ErrNoChanges",
+			err:        fmt.Errorf("%w", ErrNoChanges),
+			wantOutput: "", // ErrNoChanges prints nothing (silent)
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			PrintError(tt.err, &buf)
+			got := buf.String()
+
+			if tt.wantOutput == "" {
+				if got != "" {
+					t.Errorf("PrintError() output = %q, want empty for ErrNoChanges", got)
+				}
+			} else if !strings.Contains(got, tt.wantOutput) {
+				t.Errorf("PrintError() output = %q, want to contain %q", got, tt.wantOutput)
+			}
+		})
+	}
+}

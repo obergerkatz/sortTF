@@ -22,10 +22,10 @@ import (
 	"strings"
 	"sync"
 
+	"sorttf/api"
 	"sorttf/config"
 	"sorttf/internal/errors"
 	"sorttf/internal/files"
-	"sorttf/lib"
 
 	"github.com/fatih/color"
 )
@@ -170,7 +170,7 @@ func isSupportedFile(filePath string) bool {
 }
 
 // processFile handles sorting and formatting of a single file.
-// It uses the lib.SortFile API and handles different modes (normal, dry-run, validate).
+// It uses the api.SortFile API and handles different modes (normal, dry-run, validate).
 // Returns nil on success, errors.ErrNoChanges if file is already sorted,
 // or an error if processing fails.
 func processFile(filePath string, config *config.Config, stdout, stderr io.Writer) error {
@@ -179,15 +179,15 @@ func processFile(filePath string, config *config.Config, stdout, stderr io.Write
 	}
 
 	// Use the library API to sort the file
-	opts := lib.Options{
+	opts := api.Options{
 		DryRun:   config.DryRun,
 		Validate: config.Validate,
 	}
 
-	err := lib.SortFile(filePath, opts)
+	err := api.SortFile(filePath, opts)
 
 	// Handle results based on error type
-	if stderrors.Is(err, lib.ErrNoChanges) {
+	if stderrors.Is(err, api.ErrNoChanges) {
 		// File is already sorted - not an error
 		if config.Verbose {
 			_, _ = successColor.Fprintf(stdout, "✅ No changes needed: %s\n", fileColor.Sprint(filePath))
@@ -195,13 +195,13 @@ func processFile(filePath string, config *config.Config, stdout, stderr io.Write
 		return fmt.Errorf("%w: %s", errors.ErrNoChanges, filePath)
 	}
 
-	if stderrors.Is(err, lib.ErrNeedsSorting) {
+	if stderrors.Is(err, api.ErrNeedsSorting) {
 		// Validate mode: file needs sorting, show diff
 		_, _ = warningColor.Fprintf(stdout, "⚠️  Needs update: %s\n", fileColor.Sprint(filePath))
 
 		// Get original and sorted content for diff
 		origContent, _ := os.ReadFile(filePath)
-		sortedContent, _, _ := lib.GetSortedContent(filePath)
+		sortedContent, _, _ := api.GetSortedContent(filePath)
 
 		if origContent != nil && sortedContent != "" {
 			printUnifiedDiff(string(origContent), sortedContent, filePath, stdout)
@@ -218,7 +218,7 @@ func processFile(filePath string, config *config.Config, stdout, stderr io.Write
 
 			// Get original and sorted content for diff
 			origContent, _ := os.ReadFile(filePath)
-			sortedContent, _, _ := lib.GetSortedContent(filePath)
+			sortedContent, _, _ := api.GetSortedContent(filePath)
 
 			if origContent != nil && sortedContent != "" {
 				printUnifiedDiff(string(origContent), sortedContent, filePath, stdout)

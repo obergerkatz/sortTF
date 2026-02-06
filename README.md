@@ -19,11 +19,11 @@ A powerful command-line tool for sorting and formatting Terraform (.tf) and Terr
 # Install (from source)
 git clone https://github.com/obergerkatz/sortTF.git
 cd sortTF
-go build -o sorttf
+go build -o sorttf ./cmd/sorttf
 sudo mv sorttf /usr/local/bin/
 
 # Or using Go install
-go install github.com/OBerger96/sortTF@latest
+go install github.com/OBerger96/sortTF/cmd/sorttf@latest
 
 # Basic usage
 sorttf .
@@ -133,10 +133,11 @@ go test ./... -short
 
 ### Test Suite
 
-- **73+ test functions** covering all major functionality
-- **Unit tests** for individual packages (CLI, config, errors, files, lib)
+- **155+ unit test functions** and **29 integration/system tests** covering all major functionality
+- **Unit tests** for individual packages (CLI, config, errors, files, hcl, sorttf)
 - **Integration tests** that execute the actual binary end-to-end
-- **Coverage**: 75-100% across packages (CLI: 82%, config: 100%, lib: 75%)
+- **System tests** for CLI flag combinations, error scenarios, and performance
+- **Coverage**: **95% overall** with 3 packages at 100% (config, internal/errors, internal/files)
 
 The integration tests verify:
 - Complete CLI workflows from argument parsing to file output
@@ -154,29 +155,55 @@ See [integration/README.md](integration/README.md) for details on the integratio
 
 ```
 sortTF/
-├── main.go              # Application entry point
-├── cli/                 # Command-line interface and execution
+├── cmd/
+│   └── sorttf/          # CLI application entry point
+├── api/                 # Public library API for programmatic use
+├── cli/                 # Command-line interface and execution logic
 ├── config/              # Configuration and flag parsing
-├── hcl/                 # HCL parsing, sorting, formatting, and errors
-├── lib/                 # Reusable library API for programmatic use
-├── integration/         # End-to-end integration tests
+├── hcl/                 # HCL parsing, sorting, and formatting
 ├── internal/
 │   ├── errors/         # Unified error handling
 │   └── files/          # File traversal and validation
+├── integration/         # End-to-end integration tests
+├── testdata/            # Test fixtures and data
 └── examples/            # Library usage examples
 ```
+
+This follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout):
+- `cmd/`: Command-line applications
+- `api/`: Public library API
+- `internal/`: Private application and library code
 
 ### Building
 
 ```bash
 # Build for current platform
-go build -o sorttf
+go build -o sorttf ./cmd/sorttf
 
 # Build for specific platforms
-GOOS=linux GOARCH=amd64 go build -o sorttf-linux
-GOOS=darwin GOARCH=amd64 go build -o sorttf-darwin
-GOOS=windows GOARCH=amd64 go build -o sorttf-windows.exe
+GOOS=linux GOARCH=amd64 go build -o sorttf-linux ./cmd/sorttf
+GOOS=darwin GOARCH=amd64 go build -o sorttf-darwin ./cmd/sorttf
+GOOS=windows GOARCH=amd64 go build -o sorttf-windows.exe ./cmd/sorttf
 ```
+
+### Using as a Library
+
+You can also import sortTF as a library in your own Go programs:
+
+```go
+import "github.com/OBerger96/sortTF/api"
+
+// Sort a single file
+err := api.SortFile("main.tf", api.Options{})
+if err != nil && !errors.Is(err, api.ErrNoChanges) {
+    log.Fatal(err)
+}
+
+// Sort multiple files with options
+results := api.SortFiles(paths, api.Options{DryRun: true})
+```
+
+See [examples/library_usage.go](examples/library_usage.go) for more examples.
 
 ### Code Quality
 

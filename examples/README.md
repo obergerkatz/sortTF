@@ -5,13 +5,13 @@ sortTF can be imported and used as a library in your own Go programs. This allow
 ## Installation
 
 ```bash
-go get github.com/obergerkatz/sorttf/lib
+go get github.com/obergerkatz/sorttf/api
 ```
 
 ## Quick Start
 
 ```go
-import "sorttf/lib"
+import "sorttf/api"
 
 // Sort a single file
 err := lib.SortFile("main.tf", lib.Options{})

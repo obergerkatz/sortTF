@@ -53,6 +53,7 @@
 //
 // The project is organized into the following packages:
 //
+//   - api: Public API for sorting files programmatically
 //   - cli: Command-line interface and main execution logic
 //   - config: Configuration parsing and flag handling
 //   - hcl: HCL parsing, sorting, and formatting
@@ -80,4 +81,12 @@
 //	❌ Encountered 1 errors
 //	$ echo $?
 //	1
-package main
+//
+// # Library Usage
+//
+// Import the api package to use sortTF programmatically:
+//
+//	import "sorttf/api"
+//
+//	err := api.SortFile("main.tf", api.Options{})
+package sorttf
