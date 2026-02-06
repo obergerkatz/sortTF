@@ -211,7 +211,7 @@ jobs:
             echo ""
             echo "### Using go install"
             echo '```bash'
-            echo "go install github.com/OBerger96/sortTF/cmd/sorttf@${VERSION}"
+            echo "go install github.com/obergerkatz/sortTF/cmd/sorttf@${VERSION}"
             echo '```'
             echo ""
             echo "### Download Binary"
@@ -220,12 +220,12 @@ jobs:
             echo "#### Linux"
             echo '```bash'
             echo "# AMD64"
-            echo "wget https://github.com/OBerger96/sortTF/releases/download/${VERSION}/sorttf-linux-amd64"
+            echo "wget https://github.com/obergerkatz/sortTF/releases/download/${VERSION}/sorttf-linux-amd64"
             echo "chmod +x sorttf-linux-amd64"
             echo "sudo mv sorttf-linux-amd64 /usr/local/bin/sorttf"
             echo ""
             echo "# ARM64"
-            echo "wget https://github.com/OBerger96/sortTF/releases/download/${VERSION}/sorttf-linux-arm64"
+            echo "wget https://github.com/obergerkatz/sortTF/releases/download/${VERSION}/sorttf-linux-arm64"
             echo "chmod +x sorttf-linux-arm64"
             echo "sudo mv sorttf-linux-arm64 /usr/local/bin/sorttf"
             echo '```'
@@ -233,12 +233,12 @@ jobs:
             echo "#### macOS"
             echo '```bash'
             echo "# Intel"
-            echo "wget https://github.com/OBerger96/sortTF/releases/download/${VERSION}/sorttf-darwin-amd64"
+            echo "wget https://github.com/obergerkatz/sortTF/releases/download/${VERSION}/sorttf-darwin-amd64"
             echo "chmod +x sorttf-darwin-amd64"
             echo "sudo mv sorttf-darwin-amd64 /usr/local/bin/sorttf"
             echo ""
             echo "# Apple Silicon"
-            echo "wget https://github.com/OBerger96/sortTF/releases/download/${VERSION}/sorttf-darwin-arm64"
+            echo "wget https://github.com/obergerkatz/sortTF/releases/download/${VERSION}/sorttf-darwin-arm64"
             echo "chmod +x sorttf-darwin-arm64"
             echo "sudo mv sorttf-darwin-arm64 /usr/local/bin/sorttf"
             echo '```'
@@ -253,7 +253,7 @@ jobs:
             echo "Verify the integrity of downloaded binaries using checksums:"
             echo '```bash'
             echo "# Download checksums file"
-            echo "wget https://github.com/OBerger96/sortTF/releases/download/${VERSION}/checksums.txt"
+            echo "wget https://github.com/obergerkatz/sortTF/releases/download/${VERSION}/checksums.txt"
             echo ""
             echo "# Verify (Linux/macOS)"
             echo "sha256sum -c checksums.txt"
@@ -261,7 +261,7 @@ jobs:
             echo ""
             echo "---"
             echo ""
-            echo "_Built with Go ${{ env.GO_VERSION }} • [Full Changelog](https://github.com/OBerger96/sortTF/compare/${PREV_TAG}...${VERSION})_"
+            echo "_Built with Go ${{ env.GO_VERSION }} • [Full Changelog](https://github.com/obergerkatz/sortTF/compare/${PREV_TAG}...${VERSION})_"
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
