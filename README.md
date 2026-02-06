@@ -17,7 +17,7 @@ A powerful command-line tool for sorting and formatting Terraform (.tf) and Terr
 
 ```bash
 # Install (from source)
-git clone https://github.com/yourusername/sortTF.git
+git clone https://github.com/obergerkatz/sortTF.git
 cd sortTF
 go build -o sorttf
 sudo mv sorttf /usr/local/bin/
