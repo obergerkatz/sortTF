@@ -588,3 +588,36 @@ func TestFindFilesEnhancedErrorHandling(t *testing.T) {
 		t.Errorf("Expected 0 files in empty directory, got %d", len(files))
 	}
 }
+
+func TestShouldSkipDir(t *testing.T) {
+	tests := []struct {
+		name     string
+		dirName  string
+		isDir    bool
+		expected bool
+	}{
+		{"skip .terraform directory", ".terraform", true, true},
+		{"skip .terragrunt-cache directory", ".terragrunt-cache", true, true},
+		{"don't skip regular directory", "regular-dir", true, false},
+		{"don't skip file even if named .terraform", ".terraform", false, false},
+		{"don't skip file even if named .terragrunt-cache", ".terragrunt-cache", false, false},
+		{"don't skip src directory", "src", true, false},
+		{"don't skip modules directory", "modules", true, false},
+		{"handle nil info", "any-name", true, false}, // This will be tested with nil info
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var info os.FileInfo
+			if tt.name != "handle nil info" {
+				info = &mockFileInfo{name: tt.dirName, isDir: tt.isDir}
+			}
+			// For "handle nil info" test case, info remains nil
+
+			got := ShouldSkipDir("/some/path/"+tt.dirName, info)
+			if got != tt.expected {
+				t.Errorf("ShouldSkipDir(%q, isDir=%v) = %v, want %v", tt.dirName, tt.isDir, got, tt.expected)
+			}
+		})
+	}
+}
