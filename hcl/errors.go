@@ -7,14 +7,16 @@ import (
 )
 
 // ErrorKind categorizes HCL errors for display and handling purposes.
+// It allows callers to distinguish between different types of errors
+// without relying on string matching.
 type ErrorKind int
 
 const (
-	KindUnknown ErrorKind = iota
-	KindParsing
-	KindValidation
-	KindFormatting
-	KindSorting
+	KindUnknown    ErrorKind = iota // Unknown or uncategorized error
+	KindParsing                     // HCL parsing or syntax error
+	KindValidation                  // Semantic validation error (e.g., wrong label count)
+	KindFormatting                  // Error during formatting
+	KindSorting                     // Error during sorting operation
 )
 
 // HCLError is the unified error type for HCL operations.
@@ -26,6 +28,8 @@ type HCLError struct {
 	Err  error     // Underlying error
 }
 
+// Error implements the error interface, returning a formatted error message
+// that includes the operation name, file path (if available), and underlying error.
 func (e *HCLError) Error() string {
 	if e.Err != nil {
 		if e.Path != "" {
@@ -39,6 +43,8 @@ func (e *HCLError) Error() string {
 	return e.Op
 }
 
+// Unwrap returns the underlying error, allowing error unwrapping
+// with errors.Is and errors.As.
 func (e *HCLError) Unwrap() error {
 	return e.Err
 }
@@ -47,10 +53,12 @@ func (e *HCLError) Unwrap() error {
 // This is kept separate from HCLError because it has a fundamentally different shape
 // (holds hcl.Diagnostics instead of a simple error).
 type HCLParseError struct {
-	Path  string           // File path that failed to parse
-	Diags hcl.Diagnostics  // Parser diagnostics with error details
+	Path  string          // File path that failed to parse
+	Diags hcl.Diagnostics // Parser diagnostics with error details
 }
 
+// Error implements the error interface, returning a formatted error message
+// that includes the file path and the detailed diagnostics from the HCL parser.
 func (e *HCLParseError) Error() string {
 	return fmt.Sprintf("HCL parsing failed for %s: %s", e.Path, e.Diags.Error())
 }
@@ -117,7 +125,8 @@ func IsPermissionError(err error) bool {
 	return false
 }
 
-// Helper function
+// containsAny checks if string s contains any of the given substrings.
+// Returns true on the first match found.
 func containsAny(s string, substrs ...string) bool {
 	for _, substr := range substrs {
 		if len(s) >= len(substr) {

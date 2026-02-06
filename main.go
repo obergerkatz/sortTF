@@ -1,3 +1,5 @@
+// Command sorttf sorts and formats Terraform and Terragrunt files.
+// See package doc.go for full documentation.
 package main
 
 import (

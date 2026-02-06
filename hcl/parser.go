@@ -13,9 +13,9 @@ import (
 // It is returned by ParseHCLFile and contains the parsed structure
 // along with any parser diagnostics (warnings or errors).
 type ParsedFile struct {
-	File  *hcl.File        // Parsed file structure
-	Body  hcl.Body         // File body for attribute/block access
-	Diags hcl.Diagnostics  // Parser diagnostics (may be empty)
+	File  *hcl.File       // Parsed file structure
+	Body  hcl.Body        // File body for attribute/block access
+	Diags hcl.Diagnostics // Parser diagnostics (may be empty)
 }
 
 // ParseHCLFile reads and parses a .tf or .hcl file.
@@ -155,7 +155,9 @@ func ValidateRequiredBlockLabels(pf *ParsedFile) error {
 
 // Helper functions
 
-// validateFilePath checks if a file path is valid and accessible
+// validateFilePath checks if a file path is valid and accessible.
+// It returns a user-friendly error message if the path is invalid,
+// doesn't exist, has permission issues, or is a directory.
 func validateFilePath(path string) error {
 	if path == "" {
 		return fmt.Errorf("empty path provided")

@@ -486,7 +486,8 @@ func TestValidateDirectoryPath(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for empty path")
 	}
-	var e *errors.Error; if !stderrors.As(err, &e) {
+	var e *errors.Error
+	if !stderrors.As(err, &e) {
 		t.Error("Expected errors.Error for empty path")
 	}
 

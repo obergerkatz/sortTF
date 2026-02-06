@@ -1,4 +1,8 @@
 // Package files provides file traversal and validation utilities for HCL files.
+//
+// This package handles discovery of Terraform (.tf) and Terragrunt (.hcl) files,
+// with logic to skip common directories like .terraform and .terragrunt-cache.
+// It provides both recursive and non-recursive file discovery.
 package files
 
 import (
@@ -11,7 +15,11 @@ import (
 	"sorttf/internal/errors"
 )
 
-// IsValidFile checks if a file should be processed based on its name and type
+// IsValidFile checks if a file should be processed based on its name and type.
+// Returns true for .tf and .hcl files (case-insensitive), excluding:
+//   - Directories
+//   - .terraform.lock.hcl (Terraform lock file)
+//   - Files starting with .terraform
 func IsValidFile(path string, info os.FileInfo) bool {
 	if info == nil {
 		return false
@@ -29,7 +37,9 @@ func IsValidFile(path string, info os.FileInfo) bool {
 	return false
 }
 
-// ShouldSkipDir checks if a directory should be skipped during traversal
+// ShouldSkipDir checks if a directory should be skipped during traversal.
+// Returns true for directories starting with ".terra" (e.g., .terraform, .terragrunt-cache).
+// This prevents processing of Terraform/Terragrunt cache and state directories.
 func ShouldSkipDir(path string, info os.FileInfo) bool {
 	if info == nil {
 		return false
@@ -37,7 +47,10 @@ func ShouldSkipDir(path string, info os.FileInfo) bool {
 	return info.IsDir() && strings.HasPrefix(info.Name(), ".terra")
 }
 
-// FindFiles recursively or non-recursively finds all valid Terraform and Terragrunt files
+// FindFiles discovers all valid Terraform and Terragrunt files in a directory.
+// When recursive is true, it walks the directory tree, skipping .terraform* directories.
+// When recursive is false, it only examines the immediate directory.
+// Returns a slice of file paths, or an error if the root path is inaccessible.
 func FindFiles(root string, recursive bool) ([]string, error) {
 	// Check if root path exists
 	if _, err := os.Stat(root); err != nil {
@@ -82,7 +95,12 @@ func FindFiles(root string, recursive bool) ([]string, error) {
 	return foundFiles, nil
 }
 
-// ValidateFilePath checks if a file path is valid and accessible
+// ValidateFilePath checks if a file path is valid and accessible.
+// Returns an error if:
+//   - The path is empty
+//   - The path doesn't exist
+//   - Permission is denied
+//   - The path is a directory (not a file)
 func ValidateFilePath(path string) error {
 	if path == "" {
 		return errors.NewWithPath("ValidateFilePath", path, fmt.Errorf("empty path provided"))
@@ -100,7 +118,12 @@ func ValidateFilePath(path string) error {
 	return nil
 }
 
-// ValidateDirectoryPath checks if a directory path is valid and accessible
+// ValidateDirectoryPath checks if a directory path is valid and accessible.
+// Returns an error if:
+//   - The path is empty
+//   - The path doesn't exist
+//   - Permission is denied
+//   - The path is a file (not a directory)
 func ValidateDirectoryPath(path string) error {
 	if path == "" {
 		return errors.NewWithPath("ValidateDirectoryPath", path, fmt.Errorf("empty path provided"))
@@ -118,13 +141,14 @@ func ValidateDirectoryPath(path string) error {
 	return nil
 }
 
-// IsNotExistError checks if the error indicates a file/directory doesn't exist
+// IsNotExistError checks if the error indicates a file or directory doesn't exist.
+// Uses errors.Is to unwrap the error chain and check for ErrFileNotFound.
 func IsNotExistError(err error) bool {
 	return stderrors.Is(err, errors.ErrFileNotFound)
 }
 
-// IsPermissionError checks if the error indicates a permission issue
+// IsPermissionError checks if the error indicates a permission issue.
+// Uses errors.Is to unwrap the error chain and check for ErrPermissionDenied.
 func IsPermissionError(err error) bool {
 	return stderrors.Is(err, errors.ErrPermissionDenied)
 }
-

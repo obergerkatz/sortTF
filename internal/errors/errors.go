@@ -39,16 +39,17 @@ var (
 )
 
 // ErrorKind categorizes errors for display purposes.
+// Different kinds may be displayed with different colors or formatting.
 type ErrorKind int
 
 const (
-	KindUnknown ErrorKind = iota
-	KindFileSystem
-	KindParsing
-	KindValidation
-	KindFormatting
-	KindSorting
-	KindCLI
+	KindUnknown    ErrorKind = iota // Uncategorized error
+	KindFileSystem                  // File/directory access errors
+	KindParsing                     // HCL syntax errors
+	KindValidation                  // Semantic validation errors
+	KindFormatting                  // Formatting errors
+	KindSorting                     // Sorting operation errors
+	KindCLI                         // Command-line argument errors
 )
 
 // Error is the unified error type for sortTF.

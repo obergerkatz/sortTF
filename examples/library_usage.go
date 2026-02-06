@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 // This example demonstrates using sortTF as a library in your own Go programs.

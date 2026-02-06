@@ -1,4 +1,14 @@
 // Package cli provides the command-line interface for sortTF.
+//
+// This package implements the main CLI execution logic including:
+//   - Command-line argument parsing via config package
+//   - File discovery and validation
+//   - Concurrent file processing with worker pools
+//   - Colorized output and error reporting
+//   - Unified diff generation for dry-run mode
+//
+// The main entry point is RunCLI which handles all execution modes:
+// normal, dry-run, validate, and verbose.
 package cli
 
 import (
@@ -29,12 +39,21 @@ var (
 	fileColor    = color.New(color.FgCyan)
 )
 
-// RunCLI is the main entry point for CLI execution
+// RunCLI is the main entry point for CLI execution.
+// It parses command-line arguments, discovers files, and processes them
+// according to the requested mode (normal, dry-run, validate, etc.).
+//
+// Returns an exit code:
+//   - 0: Success (all files processed successfully)
+//   - 1: Error during processing or validation failures
+//   - 2: Invalid command-line arguments
 func RunCLI(args []string) int {
 	return RunCLIWithWriters(args, os.Stdout, os.Stderr)
 }
 
-// RunCLIWithWriters allows testing by providing custom writers
+// RunCLIWithWriters executes the CLI with custom output writers.
+// This is primarily used for testing to capture and verify output.
+// The behavior is otherwise identical to RunCLI.
 func RunCLIWithWriters(args []string, stdout, stderr io.Writer) int {
 	config, err := config.ParseFlags(args, stderr)
 	if err != nil {
@@ -49,7 +68,9 @@ func RunCLIWithWriters(args []string, stdout, stderr io.Writer) int {
 	return runMainLogic(config, stdout, stderr)
 }
 
-// runMainLogic executes the main CLI logic
+// runMainLogic executes the main CLI logic after argument parsing.
+// It validates paths, discovers files, and coordinates their processing.
+// Returns an exit code suitable for os.Exit.
 func runMainLogic(config *config.Config, stdout, stderr io.Writer) int {
 	// Check if the path is a file or directory
 	fileInfo, err := os.Stat(config.Root)
@@ -141,13 +162,17 @@ func runMainLogic(config *config.Config, stdout, stderr io.Writer) int {
 	return 0
 }
 
-// isSupportedFile checks if the file has a supported extension
+// isSupportedFile checks if the file has a supported extension (.tf or .hcl).
+// Returns true for Terraform and Terragrunt files, false otherwise.
 func isSupportedFile(filePath string) bool {
 	ext := filepath.Ext(filePath)
 	return ext == ".tf" || ext == ".hcl"
 }
 
-// processFile handles a single file
+// processFile handles sorting and formatting of a single file.
+// It uses the lib.SortFile API and handles different modes (normal, dry-run, validate).
+// Returns nil on success, errors.ErrNoChanges if file is already sorted,
+// or an error if processing fails.
 func processFile(filePath string, config *config.Config, stdout, stderr io.Writer) error {
 	if config.Verbose {
 		_, _ = infoColor.Fprintf(stdout, "🔄 Processing: %s\n", fileColor.Sprint(filePath))
@@ -211,18 +236,26 @@ func processFile(filePath string, config *config.Config, stdout, stderr io.Write
 	return errors.New("processFile", fmt.Errorf("failed to process %s: %w", filePath, err))
 }
 
-// fileResult holds the result of processing a single file
+// fileResult holds the result of processing a single file in concurrent mode.
+// It contains the file path, any error that occurred, buffered output,
+// and flags indicating the result type (no changes needed, successfully processed, etc.).
 type fileResult struct {
-	path          string
-	err           error
-	stdout        string
-	stderr        string
-	noChanges     bool
-	processedFile bool
+	path          string // Path of the processed file
+	err           error  // Error that occurred, or nil
+	stdout        string // Buffered standard output
+	stderr        string // Buffered standard error
+	noChanges     bool   // True if file was already sorted
+	processedFile bool   // True if file was successfully processed/modified
 }
 
 // processFilesConcurrent processes multiple files concurrently using a worker pool.
-// It returns counts of processed files, errors, and files with no changes.
+// It automatically determines worker count based on CPU cores (2x for I/O overlap).
+// Falls back to serial processing for < 4 files or when verbose mode is enabled.
+//
+// Returns (processedCount, errorCount, noChangesCount) where:
+//   - processedCount: files that were successfully sorted/modified
+//   - errorCount: files that encountered errors
+//   - noChangesCount: files that were already sorted
 func processFilesConcurrent(filePaths []string, config *config.Config, stdout, stderr io.Writer) (int, int, int) {
 	if len(filePaths) == 0 {
 		return 0, 0, 0
@@ -318,7 +351,9 @@ func processFilesConcurrent(filePaths []string, config *config.Config, stdout, s
 	return processedCount, errorCount, noChangesCount
 }
 
-// processFilesSerial processes files one at a time (used for small batches or verbose mode)
+// processFilesSerial processes files sequentially one at a time.
+// This is used for small batches (< 4 files) or when verbose mode is enabled
+// to maintain readable output order. Returns the same counts as processFilesConcurrent.
 func processFilesSerial(filePaths []string, config *config.Config, stdout, stderr io.Writer) (int, int, int) {
 	processedCount := 0
 	errorCount := 0
@@ -344,7 +379,10 @@ func processFilesSerial(filePaths []string, config *config.Config, stdout, stder
 	return processedCount, errorCount, noChangesCount
 }
 
-// printUnifiedDiff prints a unified diff between two file contents
+// printUnifiedDiff prints a unified diff between original and formatted content.
+// It displays the changes in a readable format with +/- prefixes for added/removed lines.
+// Shows context lines (first and last 3 lines) to help locate changes.
+// Used in dry-run and validate modes to show what would change.
 func printUnifiedDiff(a, b, filePath string, out io.Writer) {
 	if a == b {
 		_, _ = fmt.Fprintf(out, "(No changes)\n")

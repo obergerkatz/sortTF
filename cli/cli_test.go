@@ -427,8 +427,8 @@ func TestRunCLI_InvalidSyntax(t *testing.T) {
 
 	output := stderr.String() + stdout.String()
 	hasError := strings.Contains(output, "error") ||
-	            strings.Contains(output, "Error") ||
-	            strings.Contains(output, "validation")
+		strings.Contains(output, "Error") ||
+		strings.Contains(output, "validation")
 	if !hasError {
 		t.Errorf("Expected error message, got stdout: %s, stderr: %s", stdout.String(), stderr.String())
 	}
@@ -464,10 +464,10 @@ func TestIsSupportedFile(t *testing.T) {
 // TestPrintUnifiedDiff tests the diff output function
 func TestPrintUnifiedDiff(t *testing.T) {
 	tests := []struct {
-		name     string
-		original string
+		name      string
+		original  string
 		formatted string
-		wantDiff bool
+		wantDiff  bool
 	}{
 		{
 			name:      "no changes",

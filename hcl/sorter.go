@@ -29,12 +29,15 @@ const (
 // Block represents a parsed HCL block with its type, labels, and content.
 // It is used internally for sorting blocks by type and labels.
 type Block struct {
-	Type   BlockType        // Block type (terraform, provider, resource, etc.)
-	Labels []string         // Block labels (e.g., ["aws", "instance"] for a resource)
-	Block  *hclwrite.Block  // The actual HCL block
+	Type   BlockType       // Block type (terraform, provider, resource, etc.)
+	Labels []string        // Block labels (e.g., ["aws", "instance"] for a resource)
+	Block  *hclwrite.Block // The actual HCL block
 }
 
-// blockTypeOrder defines the order in which block types should appear
+// blockTypeOrder defines the canonical order in which block types should appear.
+// Lower numbers appear first. This follows Terraform best practices where
+// configuration blocks (terraform, provider) come before declarations (variable)
+// which come before implementations (resource, module).
 var blockTypeOrder = map[BlockType]int{
 	BlockTypeTerraform: 1,
 	BlockTypeProvider:  2,
@@ -48,7 +51,8 @@ var blockTypeOrder = map[BlockType]int{
 	BlockTypeOther:     10,
 }
 
-// getBlockType determines the type of a block based on its name
+// getBlockType determines the type of a block based on its name.
+// The check is case-insensitive. Returns BlockTypeOther for unknown block types.
 func getBlockType(name string) BlockType {
 	switch strings.ToLower(name) {
 	case "terraform":
@@ -114,7 +118,9 @@ func SortHCLFile(file *hclwrite.File) *hclwrite.File {
 	return newFile
 }
 
-// parseBlocks extracts all blocks from an HCL body
+// parseBlocks extracts all top-level blocks from an HCL body.
+// Backend blocks at the top level are skipped as they should only
+// appear nested within terraform blocks.
 func parseBlocks(body *hclwrite.Body) []Block {
 	var blocks []Block
 
@@ -137,7 +143,9 @@ func parseBlocks(body *hclwrite.Body) []Block {
 	return blocks
 }
 
-// sortBlocks sorts blocks by type and then by labels
+// sortBlocks sorts blocks by type (using blockTypeOrder) and then
+// alphabetically by labels within each type. Uses stable sort to
+// preserve relative order when keys are equal.
 func sortBlocks(blocks []Block) {
 	sort.SliceStable(blocks, func(i, j int) bool {
 		// First, sort by block type order
@@ -153,7 +161,9 @@ func sortBlocks(blocks []Block) {
 	})
 }
 
-// compareLabels compares two label slices lexicographically
+// compareLabels compares two label slices lexicographically.
+// Returns true if labels1 should sort before labels2.
+// If all common labels are equal, shorter slices sort first.
 func compareLabels(labels1, labels2 []string) bool {
 	minLen := len(labels1)
 	if len(labels2) < minLen {
@@ -170,7 +180,9 @@ func compareLabels(labels1, labels2 []string) bool {
 	return len(labels1) < len(labels2)
 }
 
-// sortBlockAttributes sorts attributes within a block alphabetically
+// sortBlockAttributes sorts attributes within a block alphabetically,
+// with special handling for for_each which is always placed first.
+// Also recursively sorts nested blocks by type and labels.
 func sortBlockAttributes(block *hclwrite.Block) {
 	if block == nil {
 		return

@@ -535,16 +535,16 @@ output "instance_id" {
 
 	// Verify block order: terraform, provider, variable, locals, data, resource, module, output
 	indices := map[string]int{
-		"terraform":     strings.Index(content, "terraform {"),
-		"provider":      strings.Index(content, "provider \"aws\""),
-		"variable":      strings.Index(content, "variable \"environment\""), // First alphabetically
-		"locals":        strings.Index(content, "locals {"),
-		"data":          strings.Index(content, "data \"aws_ami\""),
-		"resource_app":  strings.Index(content, "resource \"aws_instance\""),
-		"resource_sg":   strings.Index(content, "resource \"aws_security_group\""),
-		"module":        strings.Index(content, "module \"vpc\""),
-		"output_inst":   strings.Index(content, "output \"instance_id\""),
-		"output_sg":     strings.Index(content, "output \"security_group_id\""),
+		"terraform":    strings.Index(content, "terraform {"),
+		"provider":     strings.Index(content, "provider \"aws\""),
+		"variable":     strings.Index(content, "variable \"environment\""), // First alphabetically
+		"locals":       strings.Index(content, "locals {"),
+		"data":         strings.Index(content, "data \"aws_ami\""),
+		"resource_app": strings.Index(content, "resource \"aws_instance\""),
+		"resource_sg":  strings.Index(content, "resource \"aws_security_group\""),
+		"module":       strings.Index(content, "module \"vpc\""),
+		"output_inst":  strings.Index(content, "output \"instance_id\""),
+		"output_sg":    strings.Index(content, "output \"security_group_id\""),
 	}
 
 	// Verify all blocks exist
