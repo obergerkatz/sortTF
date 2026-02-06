@@ -9,12 +9,13 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
-// Custom error types for better error handling
+// FormattingError represents an error during HCL formatting.
+// It wraps the underlying error with operation, path, and content context.
 type FormattingError struct {
-	Op      string
-	Path    string
-	Content string
-	Err     error
+	Op      string // Operation that failed (e.g., "FormatHCLFile")
+	Path    string // File path (may be empty for in-memory operations)
+	Content string // Content being formatted (may be empty)
+	Err     error  // Underlying error
 }
 
 func (e *FormattingError) Error() string {
@@ -34,9 +35,10 @@ func (e *FormattingError) Unwrap() error {
 	return e.Err
 }
 
-// TerraformNotFoundError indicates terraform command is not available
+// TerraformNotFoundError indicates the terraform command is not available in PATH.
+// This error is returned when attempting to use terraform fmt but the command cannot be found.
 type TerraformNotFoundError struct {
-	Err error
+	Err error // Underlying error from exec.LookPath
 }
 
 func (e *TerraformNotFoundError) Error() string {
@@ -49,8 +51,13 @@ func (e *TerraformNotFoundError) Unwrap() error {
 
 // Note: HCLParseError is defined in parser.go
 
-// FormatHCLFile takes an hclwrite.File and returns the formatted string
-// using terraform fmt standards
+// FormatHCLFile takes an hclwrite.File and returns the formatted string using terraform fmt standards.
+//
+// It converts the file to bytes using hclwrite, then applies terraform fmt formatting
+// to ensure consistent style. Requires the terraform command to be available in PATH.
+//
+// Returns the formatted content as a string, or an error if formatting fails.
+// If terraform fmt fails, the unformatted content is returned along with the error.
 func FormatHCLFile(file *hclwrite.File) (string, error) {
 	if file == nil {
 		return "", &FormattingError{
@@ -132,7 +139,12 @@ func applyTerraformFmt(content string) (string, error) {
 	return string(formattedBytes), nil
 }
 
-// FormatHCLString formats a raw HCL string using terraform fmt
+// FormatHCLString formats a raw HCL string using terraform fmt.
+//
+// It first parses the string to validate syntax, then formats it using terraform fmt.
+// Useful for formatting HCL content that is not yet written to a file.
+//
+// Returns the formatted string, or an error if parsing or formatting fails.
 func FormatHCLString(content string) (string, error) {
 	if content == "" {
 		return "", nil
@@ -150,7 +162,12 @@ func FormatHCLString(content string) (string, error) {
 	return FormatHCLFile(file)
 }
 
-// FormatFile formats an existing file using terraform fmt
+// FormatFile formats an existing file using terraform fmt.
+//
+// It runs "terraform fmt <filepath>" directly on the file, modifying it in place.
+// Requires the terraform command to be available in PATH.
+//
+// Returns an error if the file doesn't exist, terraform is not found, or formatting fails.
 func FormatFile(filePath string) error {
 	if filePath == "" {
 		return &FormattingError{
@@ -191,7 +208,12 @@ func FormatFile(filePath string) error {
 	return nil
 }
 
-// FormatDirectory formats all .tf files in a directory using terraform fmt
+// FormatDirectory formats all .tf files in a directory using terraform fmt.
+//
+// It runs "terraform fmt <dirpath>" to format all Terraform files in the directory.
+// Requires the terraform command to be available in PATH.
+//
+// Returns an error if the directory doesn't exist, terraform is not found, or formatting fails.
 func FormatDirectory(dirPath string) error {
 	if dirPath == "" {
 		return &FormattingError{
@@ -271,13 +293,13 @@ func validateDirectoryPath(path string) error {
 
 // Error checking helper functions
 
-// IsFormattingError checks if an error is a FormattingError
+// IsFormattingError checks if an error is a FormattingError.
 func IsFormattingError(err error) bool {
 	_, ok := err.(*FormattingError)
 	return ok
 }
 
-// IsTerraformNotFoundError checks if the error indicates terraform command is not found
+// IsTerraformNotFoundError checks if the error indicates terraform command is not found.
 func IsTerraformNotFoundError(err error) bool {
 	if _, ok := err.(*TerraformNotFoundError); ok {
 		return true
@@ -290,27 +312,3 @@ func IsTerraformNotFoundError(err error) bool {
 }
 
 // Note: IsHCLParseError, IsNotExistError, IsPermissionError are defined in parser.go
-
-// GetFormattingErrorPath extracts the path from a FormattingError
-func GetFormattingErrorPath(err error) string {
-	if formattingErr, ok := err.(*FormattingError); ok {
-		return formattingErr.Path
-	}
-	return ""
-}
-
-// GetFormattingErrorOp extracts the operation from a FormattingError
-func GetFormattingErrorOp(err error) string {
-	if formattingErr, ok := err.(*FormattingError); ok {
-		return formattingErr.Op
-	}
-	return ""
-}
-
-// GetFormattingErrorContent extracts the content from a FormattingError
-func GetFormattingErrorContent(err error) string {
-	if formattingErr, ok := err.(*FormattingError); ok {
-		return formattingErr.Content
-	}
-	return ""
-}

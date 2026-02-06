@@ -128,11 +128,3 @@ func IsPermissionError(err error) bool {
 	return stderrors.Is(err, errors.ErrPermissionDenied)
 }
 
-// GetFileUtilErrorPath extracts the path from an Error (for backward compatibility)
-func GetFileUtilErrorPath(err error) string {
-	var e *errors.Error
-	if stderrors.As(err, &e) {
-		return e.Path
-	}
-	return ""
-}

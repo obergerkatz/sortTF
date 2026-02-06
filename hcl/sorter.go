@@ -8,13 +8,12 @@ import (
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
-// SortingError represents an error during sorting or formatting
-// It wraps the operation, file path, and the underlying error
-// Path is optional (may be empty for in-memory operations)
+// SortingError represents an error during sorting or formatting.
+// It wraps the underlying error with operation and path context.
 type SortingError struct {
-	Op   string
-	Path string
-	Err  error
+	Op   string // Operation that failed (e.g., "SortHCLFile")
+	Path string // File path (may be empty for in-memory operations)
+	Err  error  // Underlying error
 }
 
 func (e *SortingError) Error() string {
@@ -34,27 +33,31 @@ func (e *SortingError) Unwrap() error {
 	return e.Err
 }
 
-// BlockType represents the type of a Terraform block
+// BlockType represents the type of a Terraform block.
+// Block types are used to determine sorting order in HCL files.
 type BlockType string
 
+// Terraform block type constants.
+// These define the canonical block types and their sorting order.
 const (
-	BlockTypeTerraform BlockType = "terraform"
-	BlockTypeProvider  BlockType = "provider"
-	BlockTypeVariable  BlockType = "variable"
-	BlockTypeOutput    BlockType = "output"
-	BlockTypeResource  BlockType = "resource"
-	BlockTypeData      BlockType = "data"
-	BlockTypeModule    BlockType = "module"
-	BlockTypeLocals    BlockType = "locals"
-	BlockTypeBackend   BlockType = "backend"
-	BlockTypeOther     BlockType = "other"
+	BlockTypeTerraform BlockType = "terraform" // Terraform configuration block
+	BlockTypeProvider  BlockType = "provider"  // Provider configuration
+	BlockTypeVariable  BlockType = "variable"  // Input variable
+	BlockTypeOutput    BlockType = "output"    // Output value
+	BlockTypeResource  BlockType = "resource"  // Managed resource
+	BlockTypeData      BlockType = "data"      // Data source
+	BlockTypeModule    BlockType = "module"    // Module invocation
+	BlockTypeLocals    BlockType = "locals"    // Local values
+	BlockTypeBackend   BlockType = "backend"   // Backend configuration
+	BlockTypeOther     BlockType = "other"     // Unknown block type
 )
 
-// Block represents a parsed HCL block with its type, labels, and content
+// Block represents a parsed HCL block with its type, labels, and content.
+// It is used internally for sorting blocks by type and labels.
 type Block struct {
-	Type   BlockType
-	Labels []string
-	Block  *hclwrite.Block
+	Type   BlockType        // Block type (terraform, provider, resource, etc.)
+	Labels []string         // Block labels (e.g., ["aws", "instance"] for a resource)
+	Block  *hclwrite.Block  // The actual HCL block
 }
 
 // blockTypeOrder defines the order in which block types should appear
@@ -97,7 +100,14 @@ func getBlockType(name string) BlockType {
 	}
 }
 
-// SortHCLFile sorts all blocks and attributes in an HCL file
+// SortHCLFile sorts all blocks and attributes in an HCL file.
+//
+// It sorts blocks by type according to Terraform conventions
+// (terraform, provider, variable, locals, data, resource, module, output),
+// then alphabetically by labels within each type.
+// Attributes within blocks are sorted alphabetically, with for_each always first.
+//
+// Returns a new hclwrite.File with sorted content.
 func SortHCLFile(file *hclwrite.File) *hclwrite.File {
 	if file == nil {
 		return hclwrite.NewEmptyFile()
@@ -255,7 +265,9 @@ func sortBlockAttributes(block *hclwrite.Block) {
 	}
 }
 
-// SortBlocksByType sorts blocks by their type according to Terraform conventions
+// SortBlocksByType sorts blocks by their type according to Terraform conventions.
+// The sorting order is: terraform, provider, variable, locals, data, resource, module, output.
+// The input slice is modified in place and also returned.
 func SortBlocksByType(blocks []Block) []Block {
 	sort.SliceStable(blocks, func(i, j int) bool {
 		return blockTypeOrder[blocks[i].Type] < blockTypeOrder[blocks[j].Type]
@@ -263,7 +275,8 @@ func SortBlocksByType(blocks []Block) []Block {
 	return blocks
 }
 
-// SortBlocksByLabels sorts blocks with the same type by their labels
+// SortBlocksByLabels sorts blocks with the same type by their labels alphabetically.
+// Labels are compared lexicographically. The input slice is modified in place and also returned.
 func SortBlocksByLabels(blocks []Block) []Block {
 	sort.SliceStable(blocks, func(i, j int) bool {
 		return compareLabels(blocks[i].Labels, blocks[j].Labels)
@@ -271,7 +284,8 @@ func SortBlocksByLabels(blocks []Block) []Block {
 	return blocks
 }
 
-// SortAttributes sorts attributes alphabetically by name
+// SortAttributes returns a sorted list of attribute names from a map of attributes.
+// The names are sorted alphabetically. This is a convenience function for sorting attributes.
 func SortAttributes(attributes map[string]*hclwrite.Attribute) []string {
 	var names []string
 	for name := range attributes {
@@ -281,7 +295,10 @@ func SortAttributes(attributes map[string]*hclwrite.Attribute) []string {
 	return names
 }
 
-// SortAndFormatHCLFile sorts all blocks and attributes in an HCL file and returns the formatted string
+// SortAndFormatHCLFile sorts all blocks and attributes in an HCL file and returns the formatted string.
+// This is the main entry point that combines sorting and formatting in one operation.
+// It first sorts the file using SortHCLFile, then formats it using FormatHCLFile.
+// Returns the formatted content as a string, or an error if formatting fails.
 func SortAndFormatHCLFile(file *hclwrite.File) (string, error) {
 	sorted := SortHCLFile(file)
 	formatted, err := FormatHCLFile(sorted)
@@ -295,24 +312,9 @@ func SortAndFormatHCLFile(file *hclwrite.File) (string, error) {
 }
 
 // Error helper functions
-// IsSortingError checks if an error is a SortingError
+
+// IsSortingError checks if an error is a SortingError.
 func IsSortingError(err error) bool {
 	_, ok := err.(*SortingError)
 	return ok
-}
-
-// GetSortingErrorOp extracts the operation from a SortingError
-func GetSortingErrorOp(err error) string {
-	if sortingErr, ok := err.(*SortingError); ok {
-		return sortingErr.Op
-	}
-	return ""
-}
-
-// GetSortingErrorPath extracts the path from a SortingError
-func GetSortingErrorPath(err error) string {
-	if sortingErr, ok := err.(*SortingError); ok {
-		return sortingErr.Path
-	}
-	return ""
 }

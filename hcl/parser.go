@@ -10,11 +10,12 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 )
 
-// ParsingError represents an error during HCL parsing
+// ParsingError represents an error during HCL parsing.
+// It wraps the underlying error with operation and path context.
 type ParsingError struct {
-	Op   string
-	Path string
-	Err  error
+	Op   string // Operation that failed (e.g., "ParseHCLFile")
+	Path string // File path (may be empty)
+	Err  error  // Underlying error
 }
 
 func (e *ParsingError) Error() string {
@@ -34,21 +35,24 @@ func (e *ParsingError) Unwrap() error {
 	return e.Err
 }
 
-// HCLParseError indicates HCL parsing failed with diagnostics
+// HCLParseError indicates HCL parsing failed with diagnostics.
+// This error is returned when the HCL parser encounters syntax errors.
 type HCLParseError struct {
-	Path  string
-	Diags hcl.Diagnostics
+	Path  string           // File path that failed to parse
+	Diags hcl.Diagnostics  // Parser diagnostics with error details
 }
 
 func (e *HCLParseError) Error() string {
 	return fmt.Sprintf("HCL parsing failed for %s: %s", e.Path, e.Diags.Error())
 }
 
-// ValidationError indicates validation failed
+// ValidationError indicates validation failed.
+// This error is returned when a file parses successfully but fails
+// structural validation (e.g., missing required labels).
 type ValidationError struct {
-	Op   string
-	Path string
-	Err  error
+	Op   string // Operation that failed (e.g., "ValidateRequiredBlockLabels")
+	Path string // File path (may be empty)
+	Err  error  // Underlying error
 }
 
 func (e *ValidationError) Error() string {
@@ -68,13 +72,20 @@ func (e *ValidationError) Unwrap() error {
 	return e.Err
 }
 
+// ParsedFile represents a parsed HCL file with diagnostics.
+// It is returned by ParseHCLFile and contains the parsed structure
+// along with any parser diagnostics (warnings or errors).
 type ParsedFile struct {
-	File  *hcl.File
-	Body  hcl.Body
-	Diags hcl.Diagnostics
+	File  *hcl.File        // Parsed file structure
+	Body  hcl.Body         // File body for attribute/block access
+	Diags hcl.Diagnostics  // Parser diagnostics (may be empty)
 }
 
-// ParseHCLFile reads and parses a .tf or .hcl file, returning a ParsedFile struct
+// ParseHCLFile reads and parses a .tf or .hcl file.
+//
+// It returns a ParsedFile containing the parsed structure and any diagnostics.
+// If parsing fails, the error will be of type *HCLParseError.
+// The ParsedFile is always returned, even on error, to allow inspection of partial results.
 func ParseHCLFile(path string) (*ParsedFile, error) {
 	if path == "" {
 		return nil, &ParsingError{
@@ -118,7 +129,15 @@ func ParseHCLFile(path string) (*ParsedFile, error) {
 	return parsedFile, nil
 }
 
-// ValidateRequiredBlockLabels checks for required labels on Terraform block types
+// ValidateRequiredBlockLabels checks for required labels on Terraform block types.
+//
+// It validates that blocks have the correct number of labels according to Terraform conventions:
+//   - resource, data: require exactly 2 labels (type, name)
+//   - module, provider, variable, output: require exactly 1 label (name)
+//   - locals, terraform: require no labels
+//   - backend: must have 1 label and appear inside a terraform block
+//
+// Returns a ValidationError if any blocks have incorrect label counts.
 func ValidateRequiredBlockLabels(pf *ParsedFile) error {
 	if pf == nil || pf.File == nil {
 		return &ValidationError{
@@ -214,25 +233,25 @@ func validateFilePath(path string) error {
 
 // Error checking helper functions
 
-// IsParsingError checks if an error is a ParsingError
+// IsParsingError checks if an error is a ParsingError.
 func IsParsingError(err error) bool {
 	_, ok := err.(*ParsingError)
 	return ok
 }
 
-// IsHCLParseError checks if the error indicates HCL parsing failed
+// IsHCLParseError checks if the error indicates HCL parsing failed.
 func IsHCLParseError(err error) bool {
 	_, ok := err.(*HCLParseError)
 	return ok
 }
 
-// IsValidationError checks if an error is a ValidationError
+// IsValidationError checks if an error is a ValidationError.
 func IsValidationError(err error) bool {
 	_, ok := err.(*ValidationError)
 	return ok
 }
 
-// IsNotExistError checks if the error indicates a file doesn't exist
+// IsNotExistError checks if the error indicates a file doesn't exist.
 func IsNotExistError(err error) bool {
 	if parsingErr, ok := err.(*ParsingError); ok {
 		return strings.Contains(parsingErr.Err.Error(), "does not exist")
@@ -240,42 +259,10 @@ func IsNotExistError(err error) bool {
 	return false
 }
 
-// IsPermissionError checks if the error indicates a permission issue
+// IsPermissionError checks if the error indicates a permission issue.
 func IsPermissionError(err error) bool {
 	if parsingErr, ok := err.(*ParsingError); ok {
 		return strings.Contains(parsingErr.Err.Error(), "permission denied")
 	}
 	return false
-}
-
-// GetParsingErrorPath extracts the path from a ParsingError
-func GetParsingErrorPath(err error) string {
-	if parsingErr, ok := err.(*ParsingError); ok {
-		return parsingErr.Path
-	}
-	return ""
-}
-
-// GetParsingErrorOp extracts the operation from a ParsingError
-func GetParsingErrorOp(err error) string {
-	if parsingErr, ok := err.(*ParsingError); ok {
-		return parsingErr.Op
-	}
-	return ""
-}
-
-// GetValidationErrorOp extracts the operation from a ValidationError
-func GetValidationErrorOp(err error) string {
-	if validationErr, ok := err.(*ValidationError); ok {
-		return validationErr.Op
-	}
-	return ""
-}
-
-// GetValidationErrorPath extracts the path from a ValidationError
-func GetValidationErrorPath(err error) string {
-	if validationErr, ok := err.(*ValidationError); ok {
-		return validationErr.Path
-	}
-	return ""
 }

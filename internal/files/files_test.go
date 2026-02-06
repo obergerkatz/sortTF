@@ -542,14 +542,6 @@ func TestErrorHelperFunctions(t *testing.T) {
 	if !IsPermissionError(permErr) {
 		t.Error("IsPermissionError should return true for ErrPermissionDenied")
 	}
-
-	// Test GetFileUtilErrorPath
-	if GetFileUtilErrorPath(fileErr) != "/test" {
-		t.Error("GetFileUtilErrorPath should return the path")
-	}
-	if GetFileUtilErrorPath(fmt.Errorf("regular error")) != "" {
-		t.Error("GetFileUtilErrorPath should return empty string for non-Error")
-	}
 }
 
 func TestFindFilesEnhancedErrorHandling(t *testing.T) {

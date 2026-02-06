@@ -1,4 +1,7 @@
 // Package config provides CLI configuration parsing and flag handling.
+//
+// This package handles command-line argument parsing for sortTF,
+// including flag definitions and validation.
 package config
 
 import (
@@ -8,15 +11,31 @@ import (
 	"io"
 )
 
+// Config holds the configuration for a sortTF execution.
 type Config struct {
-	Root      string
+	// Root is the file or directory path to process.
+	Root string
+
+	// Recursive enables recursive directory traversal.
 	Recursive bool
-	DryRun    bool
-	Verbose   bool
-	Validate  bool
+
+	// DryRun shows what would change without modifying files.
+	DryRun bool
+
+	// Verbose enables detailed logging.
+	Verbose bool
+
+	// Validate checks if files are sorted without modifying them.
+	// Exits with code 1 if changes are needed.
+	Validate bool
 }
 
-// parseFlags parses command line arguments and returns a Config
+// ParseFlags parses command line arguments and returns a Config.
+//
+// It returns an error with message "help" if the -help flag was requested,
+// allowing callers to distinguish between help requests and actual errors.
+//
+// The stderr writer is used to display help text when requested.
 func ParseFlags(args []string, stderr io.Writer) (*Config, error) {
 	fs := flag.NewFlagSet("sorttf", flag.ContinueOnError)
 	fs.SetOutput(io.Discard) // Suppress default error output
@@ -73,5 +92,3 @@ func ParseFlags(args []string, stderr io.Writer) (*Config, error) {
 
 	return &config, nil
 }
-
-// ... code will be added in the next step ...

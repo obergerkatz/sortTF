@@ -82,10 +82,17 @@ func runMainLogic(config *config.Config, stdout, stderr io.Writer) int {
 		// Find files to process
 		filePaths, err = files.FindFiles(config.Root, config.Recursive)
 		if err != nil {
+			// Extract path from error if available
+			var e *errors.Error
+			path := config.Root
+			if stderrors.As(err, &e) && e.Path != "" {
+				path = e.Path
+			}
+
 			if files.IsNotExistError(err) {
-				_, _ = errorColor.Fprintf(stderr, "❌ Path '%s' does not exist\n", fileColor.Sprint(files.GetFileUtilErrorPath(err)))
+				_, _ = errorColor.Fprintf(stderr, "❌ Path '%s' does not exist\n", fileColor.Sprint(path))
 			} else if files.IsPermissionError(err) {
-				_, _ = errorColor.Fprintf(stderr, "🔒 Permission denied accessing '%s'\n", fileColor.Sprint(files.GetFileUtilErrorPath(err)))
+				_, _ = errorColor.Fprintf(stderr, "🔒 Permission denied accessing '%s'\n", fileColor.Sprint(path))
 			} else {
 				_, _ = errorColor.Fprintf(stderr, "❌ Error finding files: %v\n", err)
 			}
@@ -147,9 +154,7 @@ func runMainLogic(config *config.Config, stdout, stderr io.Writer) int {
 
 	if errorCount > 0 {
 		_, _ = errorColor.Fprintf(stderr, "❌ Encountered %d errors\n", errorCount)
-		if config.Validate {
-			return 1
-		}
+		return 1 // Exit with error code if any errors occurred
 	}
 
 	return 0
