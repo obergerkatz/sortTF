@@ -8,16 +8,16 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 
 	"sorttf/config"
-	"sorttf/hcl"
 	"sorttf/internal/errors"
 	"sorttf/internal/files"
+	"sorttf/lib"
 
 	"github.com/fatih/color"
-	hcllib "github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
 // Color configuration
@@ -119,27 +119,8 @@ func runMainLogic(config *config.Config, stdout, stderr io.Writer) int {
 		}
 	}
 
-	// Process files
-	processedCount := 0
-	errorCount := 0
-	noChangesCount := 0
-
-	for _, filePath := range filePaths {
-		if err := processFile(filePath, config, stdout, stderr); err != nil {
-			if stderrors.Is(err, errors.ErrNoChanges) {
-				noChangesCount++
-			} else {
-				errorCount++
-				errors.PrintError(err, stderr)
-				if config.Validate {
-					// In validate mode, continue processing but will exit with error
-					continue
-				}
-			}
-		} else {
-			processedCount++
-		}
-	}
+	// Process files (concurrently for better performance)
+	processedCount, errorCount, _ := processFilesConcurrent(filePaths, config, stdout, stderr)
 
 	// Print summary
 	if config.DryRun {
@@ -172,80 +153,195 @@ func processFile(filePath string, config *config.Config, stdout, stderr io.Write
 		_, _ = infoColor.Fprintf(stdout, "🔄 Processing: %s\n", fileColor.Sprint(filePath))
 	}
 
-	// Step 1: Read original file content
-	origContent, err := os.ReadFile(filePath)
-	if err != nil {
-		return errors.New("processFile", fmt.Errorf("failed to read file: %v", err))
+	// Use the library API to sort the file
+	opts := lib.Options{
+		DryRun:   config.DryRun,
+		Validate: config.Validate,
 	}
 
-	// Step 2: Parse and validate
-	parsed, err := hcl.ParseHCLFile(filePath)
-	if err != nil {
-		if hcl.IsNotExistError(err) {
-			return errors.New("processFile", fmt.Errorf("file not found: %s", filePath))
-		} else if hcl.IsHCLParseError(err) {
-			return errors.New("processFile", fmt.Errorf("syntax error in %s: %v", filePath, err))
-		} else if hcl.IsParsingError(err) {
-			return errors.New("processFile", fmt.Errorf("parsing error in %s: %v", filePath, err))
-		}
-		return errors.New("processFile", fmt.Errorf("failed to parse %s: %v", filePath, err))
-	}
-	if err := hcl.ValidateRequiredBlockLabels(parsed); err != nil {
-		if hcl.IsValidationError(err) {
-			return errors.New("processFile", fmt.Errorf("validation error in %s: %v", filePath, err))
-		}
-		return errors.New("processFile", fmt.Errorf("validation failed for %s: %v", filePath, err))
-	}
+	err := lib.SortFile(filePath, opts)
 
-	// Step 3: Sort and format
-	hclFile, diags := hclwrite.ParseConfig(origContent, filePath, hcllib.Pos{Line: 1, Column: 1})
-	if diags.HasErrors() {
-		return errors.New("processFile", fmt.Errorf("failed to parse file as HCL: %v", diags))
-	}
-	formattedResult, err := hcl.SortAndFormatHCLFile(hclFile)
-	if err != nil {
-		if hcl.IsSortingError(err) {
-			return errors.New("processFile", fmt.Errorf("sorting/formatting error in %s: %v", filePath, err))
-		}
-		return errors.New("processFile", fmt.Errorf("failed to sort/format %s: %v", filePath, err))
-	}
-	formatted := formattedResult
-
-	// Safety check: don't write empty content
-	if len(formatted) == 0 {
-		return errors.New("processFile", fmt.Errorf("formatted content is empty for %s", filePath))
-	}
-
-	// Step 4: Compare
-	if bytes.Equal(origContent, []byte(formatted)) {
+	// Handle results based on error type
+	if stderrors.Is(err, lib.ErrNoChanges) {
+		// File is already sorted - not an error
 		if config.Verbose {
 			_, _ = successColor.Fprintf(stdout, "✅ No changes needed: %s\n", fileColor.Sprint(filePath))
 		}
 		return fmt.Errorf("%w: %s", errors.ErrNoChanges, filePath)
 	}
 
-	if config.DryRun {
-		_, _ = warningColor.Fprintf(stdout, "📝 Would update: %s\n", fileColor.Sprint(filePath))
-		printUnifiedDiff(string(origContent), formatted, filePath, stdout)
-		return nil
-	}
-
-	if config.Validate {
+	if stderrors.Is(err, lib.ErrNeedsSorting) {
+		// Validate mode: file needs sorting, show diff
 		_, _ = warningColor.Fprintf(stdout, "⚠️  Needs update: %s\n", fileColor.Sprint(filePath))
-		printUnifiedDiff(string(origContent), formatted, filePath, stdout)
+
+		// Get original and sorted content for diff
+		origContent, _ := os.ReadFile(filePath)
+		sortedContent, _, _ := lib.GetSortedContent(filePath)
+
+		if origContent != nil && sortedContent != "" {
+			printUnifiedDiff(string(origContent), sortedContent, filePath, stdout)
+		}
+
 		return errors.New("validate", fmt.Errorf("file needs update: %s", filePath))
 	}
 
-	// Step 5: Atomic write
-	tmpFile := filePath + ".tmp"
-	if err := os.WriteFile(tmpFile, []byte(formatted), 0644); err != nil {
-		return errors.New("processFile", fmt.Errorf("failed to write temp file: %v", err))
+	if err == nil {
+		// Success - check which mode
+		if config.DryRun {
+			// Dry-run mode: show what would change
+			_, _ = warningColor.Fprintf(stdout, "📝 Would update: %s\n", fileColor.Sprint(filePath))
+
+			// Get original and sorted content for diff
+			origContent, _ := os.ReadFile(filePath)
+			sortedContent, _, _ := lib.GetSortedContent(filePath)
+
+			if origContent != nil && sortedContent != "" {
+				printUnifiedDiff(string(origContent), sortedContent, filePath, stdout)
+			}
+
+			return nil
+		}
+
+		// Normal mode: file was actually written
+		_, _ = successColor.Fprintf(stdout, "✅ Updated: %s\n", fileColor.Sprint(filePath))
+		return nil
 	}
-	if err := os.Rename(tmpFile, filePath); err != nil {
-		return errors.New("processFile", fmt.Errorf("failed to replace original file: %v", err))
+
+	// Some other error occurred
+	return errors.New("processFile", fmt.Errorf("failed to process %s: %w", filePath, err))
+}
+
+// fileResult holds the result of processing a single file
+type fileResult struct {
+	path          string
+	err           error
+	stdout        string
+	stderr        string
+	noChanges     bool
+	processedFile bool
+}
+
+// processFilesConcurrent processes multiple files concurrently using a worker pool.
+// It returns counts of processed files, errors, and files with no changes.
+func processFilesConcurrent(filePaths []string, config *config.Config, stdout, stderr io.Writer) (int, int, int) {
+	if len(filePaths) == 0 {
+		return 0, 0, 0
 	}
-	_, _ = successColor.Fprintf(stdout, "✅ Updated: %s\n", fileColor.Sprint(filePath))
-	return nil
+
+	// Determine worker count: min(numFiles, numCPU * 2)
+	// Use 2x CPU count to keep CPUs busy during I/O
+	numWorkers := runtime.NumCPU() * 2
+	if numWorkers > len(filePaths) {
+		numWorkers = len(filePaths)
+	}
+	if numWorkers < 1 {
+		numWorkers = 1
+	}
+
+	// For small numbers of files or verbose mode, process serially to maintain order
+	if len(filePaths) < 4 || config.Verbose {
+		return processFilesSerial(filePaths, config, stdout, stderr)
+	}
+
+	// Create channels
+	jobs := make(chan string, len(filePaths))
+	results := make(chan fileResult, len(filePaths))
+
+	// Start workers
+	var wg sync.WaitGroup
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for path := range jobs {
+				// Process file with buffered output
+				var outBuf, errBuf bytes.Buffer
+				err := processFile(path, config, &outBuf, &errBuf)
+
+				// Send result
+				result := fileResult{
+					path:   path,
+					err:    err,
+					stdout: outBuf.String(),
+					stderr: errBuf.String(),
+				}
+
+				if err == nil {
+					result.processedFile = true
+				} else if stderrors.Is(err, errors.ErrNoChanges) {
+					result.noChanges = true
+				}
+
+				results <- result
+			}
+		}()
+	}
+
+	// Send jobs
+	for _, path := range filePaths {
+		jobs <- path
+	}
+	close(jobs)
+
+	// Wait for workers in background
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	// Collect results and write output in order received
+	// (order doesn't matter for performance, but makes output readable)
+	processedCount := 0
+	errorCount := 0
+	noChangesCount := 0
+
+	for result := range results {
+		// Write output atomically
+		if result.stdout != "" {
+			io.WriteString(stdout, result.stdout)
+		}
+		if result.stderr != "" {
+			io.WriteString(stderr, result.stderr)
+		}
+
+		// Count results
+		if result.noChanges {
+			noChangesCount++
+		} else if result.err != nil {
+			errorCount++
+			errors.PrintError(result.err, stderr)
+		} else if result.processedFile {
+			processedCount++
+		}
+	}
+
+	return processedCount, errorCount, noChangesCount
+}
+
+// processFilesSerial processes files one at a time (used for small batches or verbose mode)
+func processFilesSerial(filePaths []string, config *config.Config, stdout, stderr io.Writer) (int, int, int) {
+	processedCount := 0
+	errorCount := 0
+	noChangesCount := 0
+
+	for _, filePath := range filePaths {
+		if err := processFile(filePath, config, stdout, stderr); err != nil {
+			if stderrors.Is(err, errors.ErrNoChanges) {
+				noChangesCount++
+			} else {
+				errorCount++
+				errors.PrintError(err, stderr)
+				if config.Validate {
+					// In validate mode, continue processing but will exit with error
+					continue
+				}
+			}
+		} else {
+			processedCount++
+		}
+	}
+
+	return processedCount, errorCount, noChangesCount
 }
 
 // printUnifiedDiff prints a unified diff between two file contents

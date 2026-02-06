@@ -4,11 +4,11 @@
 //   - Parse HCL files and validate their structure
 //   - Sort blocks by type (terraform, provider, variable, etc.) and labels
 //   - Sort attributes alphabetically within blocks (with for_each always first)
-//   - Format files using terraform fmt standards
+//   - Format files using canonical HCL formatting (compatible with terraform fmt)
 //
 // The main entry points are:
 //   - ParseHCLFile: Parse and validate an HCL file
 //   - SortHCLFile: Sort blocks and attributes in an HCL file
-//   - FormatHCLFile: Apply terraform fmt formatting
+//   - FormatHCLFile: Apply canonical HCL formatting using hclwrite
 //   - SortAndFormatHCLFile: Combined sort and format operation
 package hcl

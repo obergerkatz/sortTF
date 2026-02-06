@@ -3,74 +3,11 @@ package hcl
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 )
-
-// ParsingError represents an error during HCL parsing.
-// It wraps the underlying error with operation and path context.
-type ParsingError struct {
-	Op   string // Operation that failed (e.g., "ParseHCLFile")
-	Path string // File path (may be empty)
-	Err  error  // Underlying error
-}
-
-func (e *ParsingError) Error() string {
-	if e.Err != nil {
-		if e.Path != "" {
-			return fmt.Sprintf("parsingutil %s %s: %v", e.Op, e.Path, e.Err)
-		}
-		return fmt.Sprintf("parsingutil %s: %v", e.Op, e.Err)
-	}
-	if e.Path != "" {
-		return fmt.Sprintf("parsingutil %s %s", e.Op, e.Path)
-	}
-	return fmt.Sprintf("parsingutil %s", e.Op)
-}
-
-func (e *ParsingError) Unwrap() error {
-	return e.Err
-}
-
-// HCLParseError indicates HCL parsing failed with diagnostics.
-// This error is returned when the HCL parser encounters syntax errors.
-type HCLParseError struct {
-	Path  string           // File path that failed to parse
-	Diags hcl.Diagnostics  // Parser diagnostics with error details
-}
-
-func (e *HCLParseError) Error() string {
-	return fmt.Sprintf("HCL parsing failed for %s: %s", e.Path, e.Diags.Error())
-}
-
-// ValidationError indicates validation failed.
-// This error is returned when a file parses successfully but fails
-// structural validation (e.g., missing required labels).
-type ValidationError struct {
-	Op   string // Operation that failed (e.g., "ValidateRequiredBlockLabels")
-	Path string // File path (may be empty)
-	Err  error  // Underlying error
-}
-
-func (e *ValidationError) Error() string {
-	if e.Err != nil {
-		if e.Path != "" {
-			return fmt.Sprintf("validation %s %s: %v", e.Op, e.Path, e.Err)
-		}
-		return fmt.Sprintf("validation %s: %v", e.Op, e.Err)
-	}
-	if e.Path != "" {
-		return fmt.Sprintf("validation %s %s", e.Op, e.Path)
-	}
-	return fmt.Sprintf("validation %s", e.Op)
-}
-
-func (e *ValidationError) Unwrap() error {
-	return e.Err
-}
 
 // ParsedFile represents a parsed HCL file with diagnostics.
 // It is returned by ParseHCLFile and contains the parsed structure
@@ -88,17 +25,19 @@ type ParsedFile struct {
 // The ParsedFile is always returned, even on error, to allow inspection of partial results.
 func ParseHCLFile(path string) (*ParsedFile, error) {
 	if path == "" {
-		return nil, &ParsingError{
-			Op:  "ParseHCLFile",
-			Err: fmt.Errorf("empty file path provided"),
+		return nil, &HCLError{
+			Op:   "ParseHCLFile",
+			Kind: KindParsing,
+			Err:  fmt.Errorf("empty file path provided"),
 		}
 	}
 
 	// Validate file exists and is accessible
 	if err := validateFilePath(path); err != nil {
-		return nil, &ParsingError{
+		return nil, &HCLError{
 			Op:   "ParseHCLFile",
 			Path: path,
+			Kind: KindParsing,
 			Err:  err,
 		}
 	}
@@ -106,9 +45,10 @@ func ParseHCLFile(path string) (*ParsedFile, error) {
 	parser := hclparse.NewParser()
 	src, err := os.ReadFile(path)
 	if err != nil {
-		return nil, &ParsingError{
+		return nil, &HCLError{
 			Op:   "ParseHCLFile",
 			Path: path,
+			Kind: KindParsing,
 			Err:  err,
 		}
 	}
@@ -137,20 +77,22 @@ func ParseHCLFile(path string) (*ParsedFile, error) {
 //   - locals, terraform: require no labels
 //   - backend: must have 1 label and appear inside a terraform block
 //
-// Returns a ValidationError if any blocks have incorrect label counts.
+// Returns an HCLError with KindValidation if any blocks have incorrect label counts.
 func ValidateRequiredBlockLabels(pf *ParsedFile) error {
 	if pf == nil || pf.File == nil {
-		return &ValidationError{
-			Op:  "ValidateRequiredBlockLabels",
-			Err: fmt.Errorf("parsed file is nil"),
+		return &HCLError{
+			Op:   "ValidateRequiredBlockLabels",
+			Kind: KindValidation,
+			Err:  fmt.Errorf("parsed file is nil"),
 		}
 	}
 
 	syntaxBody, ok := pf.File.Body.(*hclsyntax.Body)
 	if !ok {
-		return &ValidationError{
-			Op:  "ValidateRequiredBlockLabels",
-			Err: fmt.Errorf("file body is not hclsyntax.Body"),
+		return &HCLError{
+			Op:   "ValidateRequiredBlockLabels",
+			Kind: KindValidation,
+			Err:  fmt.Errorf("file body is not hclsyntax.Body"),
 		}
 	}
 
@@ -158,45 +100,51 @@ func ValidateRequiredBlockLabels(pf *ParsedFile) error {
 		switch block.Type {
 		case "resource", "data":
 			if len(block.Labels) != 2 {
-				return &ValidationError{
-					Op:  "ValidateRequiredBlockLabels",
-					Err: fmt.Errorf("%s block must have exactly 2 labels, got %d", block.Type, len(block.Labels)),
+				return &HCLError{
+					Op:   "ValidateRequiredBlockLabels",
+					Kind: KindValidation,
+					Err:  fmt.Errorf("%s block must have exactly 2 labels, got %d", block.Type, len(block.Labels)),
 				}
 			}
 		case "module", "provider", "variable", "output":
 			if len(block.Labels) != 1 {
-				return &ValidationError{
-					Op:  "ValidateRequiredBlockLabels",
-					Err: fmt.Errorf("%s block must have exactly 1 label, got %d", block.Type, len(block.Labels)),
+				return &HCLError{
+					Op:   "ValidateRequiredBlockLabels",
+					Kind: KindValidation,
+					Err:  fmt.Errorf("%s block must have exactly 1 label, got %d", block.Type, len(block.Labels)),
 				}
 			}
 		case "locals", "terraform":
 			if len(block.Labels) != 0 {
-				return &ValidationError{
-					Op:  "ValidateRequiredBlockLabels",
-					Err: fmt.Errorf("%s block should not have labels: got %d", block.Type, len(block.Labels)),
+				return &HCLError{
+					Op:   "ValidateRequiredBlockLabels",
+					Kind: KindValidation,
+					Err:  fmt.Errorf("%s block should not have labels: got %d", block.Type, len(block.Labels)),
 				}
 			}
 		case "backend":
 			// Backend blocks should only appear inside terraform blocks
 			if len(block.Labels) != 1 {
-				return &ValidationError{
-					Op:  "ValidateRequiredBlockLabels",
-					Err: fmt.Errorf("%s block must have exactly 1 label, got %d", block.Type, len(block.Labels)),
+				return &HCLError{
+					Op:   "ValidateRequiredBlockLabels",
+					Kind: KindValidation,
+					Err:  fmt.Errorf("%s block must have exactly 1 label, got %d", block.Type, len(block.Labels)),
 				}
 			}
-			return &ValidationError{
-				Op:  "ValidateRequiredBlockLabels",
-				Err: fmt.Errorf("backend block must be inside a terraform block"),
+			return &HCLError{
+				Op:   "ValidateRequiredBlockLabels",
+				Kind: KindValidation,
+				Err:  fmt.Errorf("backend block must be inside a terraform block"),
 			}
 		}
 		// Special case: backend block must be inside terraform block
 		if block.Type == "terraform" {
 			for _, inner := range block.Body.Blocks {
 				if inner.Type == "backend" && len(inner.Labels) != 1 {
-					return &ValidationError{
-						Op:  "ValidateRequiredBlockLabels",
-						Err: fmt.Errorf("backend block inside terraform must have exactly 1 label, got %d", len(inner.Labels)),
+					return &HCLError{
+						Op:   "ValidateRequiredBlockLabels",
+						Kind: KindValidation,
+						Err:  fmt.Errorf("backend block inside terraform must have exactly 1 label, got %d", len(inner.Labels)),
 					}
 				}
 			}
@@ -229,40 +177,4 @@ func validateFilePath(path string) error {
 	}
 
 	return nil
-}
-
-// Error checking helper functions
-
-// IsParsingError checks if an error is a ParsingError.
-func IsParsingError(err error) bool {
-	_, ok := err.(*ParsingError)
-	return ok
-}
-
-// IsHCLParseError checks if the error indicates HCL parsing failed.
-func IsHCLParseError(err error) bool {
-	_, ok := err.(*HCLParseError)
-	return ok
-}
-
-// IsValidationError checks if an error is a ValidationError.
-func IsValidationError(err error) bool {
-	_, ok := err.(*ValidationError)
-	return ok
-}
-
-// IsNotExistError checks if the error indicates a file doesn't exist.
-func IsNotExistError(err error) bool {
-	if parsingErr, ok := err.(*ParsingError); ok {
-		return strings.Contains(parsingErr.Err.Error(), "does not exist")
-	}
-	return false
-}
-
-// IsPermissionError checks if the error indicates a permission issue.
-func IsPermissionError(err error) bool {
-	if parsingErr, ok := err.(*ParsingError); ok {
-		return strings.Contains(parsingErr.Err.Error(), "permission denied")
-	}
-	return false
 }

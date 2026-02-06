@@ -1,37 +1,11 @@
 package hcl
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
-
-// SortingError represents an error during sorting or formatting.
-// It wraps the underlying error with operation and path context.
-type SortingError struct {
-	Op   string // Operation that failed (e.g., "SortHCLFile")
-	Path string // File path (may be empty for in-memory operations)
-	Err  error  // Underlying error
-}
-
-func (e *SortingError) Error() string {
-	if e.Err != nil {
-		if e.Path != "" {
-			return fmt.Sprintf("sortingutil %s %s: %v", e.Op, e.Path, e.Err)
-		}
-		return fmt.Sprintf("sortingutil %s: %v", e.Op, e.Err)
-	}
-	if e.Path != "" {
-		return fmt.Sprintf("sortingutil %s %s", e.Op, e.Path)
-	}
-	return fmt.Sprintf("sortingutil %s", e.Op)
-}
-
-func (e *SortingError) Unwrap() error {
-	return e.Err
-}
 
 // BlockType represents the type of a Terraform block.
 // Block types are used to determine sorting order in HCL files.
@@ -298,23 +272,16 @@ func SortAttributes(attributes map[string]*hclwrite.Attribute) []string {
 // SortAndFormatHCLFile sorts all blocks and attributes in an HCL file and returns the formatted string.
 // This is the main entry point that combines sorting and formatting in one operation.
 // It first sorts the file using SortHCLFile, then formats it using FormatHCLFile.
-// Returns the formatted content as a string, or an error if formatting fails.
+// Returns the formatted content as a string, or an HCLError with KindSorting if sorting or formatting fails.
 func SortAndFormatHCLFile(file *hclwrite.File) (string, error) {
 	sorted := SortHCLFile(file)
 	formatted, err := FormatHCLFile(sorted)
 	if err != nil {
-		return formatted, &SortingError{
-			Op:  "SortAndFormatHCLFile",
-			Err: err,
+		return formatted, &HCLError{
+			Op:   "SortAndFormatHCLFile",
+			Kind: KindSorting,
+			Err:  err,
 		}
 	}
 	return formatted, nil
-}
-
-// Error helper functions
-
-// IsSortingError checks if an error is a SortingError.
-func IsSortingError(err error) bool {
-	_, ok := err.(*SortingError)
-	return ok
 }

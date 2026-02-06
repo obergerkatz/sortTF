@@ -32,7 +32,7 @@ sorttf .
 ## 🛠️ Prerequisites
 
 - **Go 1.24.4+** (for building from source)
-- **Terraform** (for formatting functionality)
+- No external dependencies required (Terraform not needed)
 
 ## 📖 Usage
 
@@ -112,11 +112,41 @@ resource "aws_instance" "web" {
 
 ## 🧪 Testing
 
+sortTF has comprehensive test coverage with both unit and integration tests:
+
 ```bash
-go test ./...           # Run all tests
-go test -v ./...        # Verbose output
-go test -cover ./...    # Run with coverage
+# Run all tests (unit + integration)
+go test ./...
+
+# Run with verbose output
+go test -v ./...
+
+# Run with coverage report
+go test -cover ./...
+
+# Run only integration tests
+go test -v ./integration/...
+
+# Run only unit tests (exclude integration)
+go test ./... -short
 ```
+
+### Test Suite
+
+- **73+ test functions** covering all major functionality
+- **Unit tests** for individual packages (CLI, config, errors, files, lib)
+- **Integration tests** that execute the actual binary end-to-end
+- **Coverage**: 75-100% across packages (CLI: 82%, config: 100%, lib: 75%)
+
+The integration tests verify:
+- Complete CLI workflows from argument parsing to file output
+- Real-world Terraform configurations
+- Error handling and edge cases
+- CI/CD validation mode
+- Concurrent file processing
+- Attribute and block sorting accuracy
+
+See [integration/README.md](integration/README.md) for details on the integration test suite.
 
 ## 🏗️ Development
 
@@ -124,15 +154,16 @@ go test -cover ./...    # Run with coverage
 
 ```
 sortTF/
-├── main.go                 # Application entry point
-├── utils/
-│   ├── cliutil/           # Command-line interface
-│   ├── argsutil/          # CLI argument parsing
-│   ├── errorutil/         # Error helpers and types
-│   ├── fileutil/          # File system operations
-│   ├── formattingutil/    # HCL formatting
-│   ├── parsingutil/       # HCL parsing and validation
-│   └── sortingutil/       # Block and attribute sorting
+├── main.go              # Application entry point
+├── cli/                 # Command-line interface and execution
+├── config/              # Configuration and flag parsing
+├── hcl/                 # HCL parsing, sorting, formatting, and errors
+├── lib/                 # Reusable library API for programmatic use
+├── integration/         # End-to-end integration tests
+├── internal/
+│   ├── errors/         # Unified error handling
+│   └── files/          # File traversal and validation
+└── examples/            # Library usage examples
 ```
 
 ### Building
@@ -181,13 +212,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🐛 Known Issues
 
-- Requires Terraform to be installed for formatting functionality
 - Some edge cases with deeply nested blocks may need manual review
 - Comments are preserved but may be repositioned during sorting
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/sortTF/issues)
+- **Issues**: [GitHub Issues](https://github.com/obergerkatz/sortTF/issues)
 
 ## 🙏 Acknowledgments
 

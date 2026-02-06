@@ -1,0 +1,132 @@
+package hcl
+
+import (
+	"fmt"
+
+	"github.com/hashicorp/hcl/v2"
+)
+
+// ErrorKind categorizes HCL errors for display and handling purposes.
+type ErrorKind int
+
+const (
+	KindUnknown ErrorKind = iota
+	KindParsing
+	KindValidation
+	KindFormatting
+	KindSorting
+)
+
+// HCLError is the unified error type for HCL operations.
+// It wraps an underlying error with context about the operation, file path, and error category.
+type HCLError struct {
+	Op   string    // Operation that failed (e.g., "ParseHCLFile", "SortBlocks")
+	Path string    // File path (may be empty for in-memory operations)
+	Kind ErrorKind // Error category
+	Err  error     // Underlying error
+}
+
+func (e *HCLError) Error() string {
+	if e.Err != nil {
+		if e.Path != "" {
+			return fmt.Sprintf("%s %s: %v", e.Op, e.Path, e.Err)
+		}
+		return fmt.Sprintf("%s: %v", e.Op, e.Err)
+	}
+	if e.Path != "" {
+		return fmt.Sprintf("%s %s", e.Op, e.Path)
+	}
+	return e.Op
+}
+
+func (e *HCLError) Unwrap() error {
+	return e.Err
+}
+
+// HCLParseError represents a syntax error with diagnostics.
+// This is kept separate from HCLError because it has a fundamentally different shape
+// (holds hcl.Diagnostics instead of a simple error).
+type HCLParseError struct {
+	Path  string           // File path that failed to parse
+	Diags hcl.Diagnostics  // Parser diagnostics with error details
+}
+
+func (e *HCLParseError) Error() string {
+	return fmt.Sprintf("HCL parsing failed for %s: %s", e.Path, e.Diags.Error())
+}
+
+// Error checking functions
+
+// IsParsingError checks if an error is a parsing error.
+func IsParsingError(err error) bool {
+	if hclErr, ok := err.(*HCLError); ok {
+		return hclErr.Kind == KindParsing
+	}
+	return false
+}
+
+// IsHCLParseError checks if an error is an HCL syntax error.
+func IsHCLParseError(err error) bool {
+	_, ok := err.(*HCLParseError)
+	return ok
+}
+
+// IsValidationError checks if an error is a validation error.
+func IsValidationError(err error) bool {
+	if hclErr, ok := err.(*HCLError); ok {
+		return hclErr.Kind == KindValidation
+	}
+	return false
+}
+
+// IsFormattingError checks if an error is a formatting error.
+func IsFormattingError(err error) bool {
+	if hclErr, ok := err.(*HCLError); ok {
+		return hclErr.Kind == KindFormatting
+	}
+	return false
+}
+
+// IsSortingError checks if an error is a sorting error.
+func IsSortingError(err error) bool {
+	if hclErr, ok := err.(*HCLError); ok {
+		return hclErr.Kind == KindSorting
+	}
+	return false
+}
+
+// IsNotExistError checks if an error indicates a file doesn't exist.
+func IsNotExistError(err error) bool {
+	if hclErr, ok := err.(*HCLError); ok {
+		if hclErr.Err != nil {
+			errMsg := hclErr.Err.Error()
+			return containsAny(errMsg, "does not exist", "no such file")
+		}
+	}
+	return false
+}
+
+// IsPermissionError checks if an error indicates a permission issue.
+func IsPermissionError(err error) bool {
+	if hclErr, ok := err.(*HCLError); ok {
+		if hclErr.Err != nil {
+			errMsg := hclErr.Err.Error()
+			return containsAny(errMsg, "permission denied", "access denied")
+		}
+	}
+	return false
+}
+
+// Helper function
+func containsAny(s string, substrs ...string) bool {
+	for _, substr := range substrs {
+		if len(s) >= len(substr) {
+			for i := 0; i <= len(s)-len(substr); i++ {
+				if s[i:i+len(substr)] == substr {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -349,6 +350,56 @@ func TestRunCLI_Directory(t *testing.T) {
 	// Should only process 1 file (not in subdir)
 	if !strings.Contains(stdoutOutput, "Processed 1 file") {
 		t.Errorf("Expected 'Processed 1 file' in non-recursive mode, got: %s", stdoutOutput)
+	}
+}
+
+// TestRunCLI_ConcurrentProcessing tests processing many files concurrently
+func TestRunCLI_ConcurrentProcessing(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create 10 files to trigger concurrent processing (threshold is 4)
+	unsortedContent := `resource "aws_instance" "test" {
+  instance_type = "t2.micro"
+  ami = "ami-123"
+}
+`
+	for i := 1; i <= 10; i++ {
+		filePath := filepath.Join(tmpDir, fmt.Sprintf("file%d.tf", i))
+		if err := os.WriteFile(filePath, []byte(unsortedContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var stdout, stderr bytes.Buffer
+	exitCode := RunCLIWithWriters([]string{tmpDir}, &stdout, &stderr)
+
+	if exitCode != 0 {
+		t.Errorf("Expected exit code 0, got %d. Stderr: %s", exitCode, stderr.String())
+	}
+
+	stdoutOutput := stdout.String()
+	// Should process 10 files
+	if !strings.Contains(stdoutOutput, "Processed 10 files") {
+		t.Errorf("Expected 'Processed 10 files', got: %s", stdoutOutput)
+	}
+
+	// Verify all files were actually processed (spot check a few)
+	for i := 1; i <= 3; i++ {
+		filePath := filepath.Join(tmpDir, fmt.Sprintf("file%d.tf", i))
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Check that content was sorted (ami comes before instance_type)
+		contentStr := string(content)
+		amiIndex := strings.Index(contentStr, "ami")
+		instanceIndex := strings.Index(contentStr, "instance_type")
+		if amiIndex == -1 || instanceIndex == -1 {
+			t.Errorf("File %d missing expected attributes", i)
+		}
+		if amiIndex > instanceIndex {
+			t.Errorf("File %d not sorted correctly: ami should come before instance_type", i)
+		}
 	}
 }
 

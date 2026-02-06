@@ -8,10 +8,12 @@
 //   - Sort blocks by type (terraform, provider, variable, locals, data, resource, module, output)
 //   - Sort blocks of the same type alphabetically by label
 //   - Sort attributes alphabetically within blocks (with for_each always first)
-//   - Apply terraform fmt formatting automatically
+//   - Apply canonical HCL formatting (compatible with terraform fmt)
 //   - Process individual files or entire directories (with optional recursion)
+//   - Parallel processing for fast performance on large repositories
 //   - Dry-run mode to preview changes
 //   - Validate mode for CI/CD pipelines
+//   - No external dependencies (terraform command not required)
 //
 // # Usage
 //
