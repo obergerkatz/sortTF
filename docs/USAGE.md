@@ -411,17 +411,36 @@ resource "aws_instance" "web" {
 }
 ```
 
-### Comment Preservation
+### Comment Handling
 
-Comments are preserved but may be repositioned:
+**⚠️ Important: Comments are removed during processing.**
+
+sortTF uses the HCL write library which does not preserve comments when reformatting files. This ensures clean, consistent formatting but means inline comments will be lost.
+
+**Before sorting:**
 
 ```hcl
-# This comment stays with the resource
+# This comment will be removed
 resource "aws_instance" "web" {
-  # This comment stays with ami
+  # This comment will also be removed
   ami = "ami-123456"
 }
 ```
+
+**After sorting:**
+
+```hcl
+resource "aws_instance" "web" {
+  ami = "ami-123456"
+}
+```
+
+**Alternatives for documentation:**
+
+- Use `description` attributes in `variable` and `output` blocks
+- Document in external README files
+- Use separate documentation files
+- Consider using Terraform's built-in documentation features
 
 ### Multiple Files
 

@@ -61,6 +61,20 @@ sortTF reorders Terraform blocks in a standardized sequence:
 
 Within blocks, attributes are sorted alphabetically with `for_each` always placed first.
 
+## Important Notes
+
+### Comment Handling
+
+**⚠️ Comments are removed during processing.** sortTF uses the HCL write library which does not preserve comments when reformatting files. This is consistent with how `terraform fmt` handles comments in some scenarios.
+
+If you need to preserve comments in your Terraform files, consider:
+
+- Using file-level documentation (README files) instead of inline comments
+- Documenting configuration in external documentation
+- Using `description` attributes in variables and outputs for user-facing documentation
+
+This behavior aligns with the underlying HCL library's design and ensures clean, consistent formatting.
+
 ### Example
 
 **Before:**

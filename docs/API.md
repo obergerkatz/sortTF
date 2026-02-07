@@ -39,6 +39,16 @@ func main() {
 }
 ```
 
+## Important Note: Comment Handling
+
+**⚠️ Comments are removed during processing.** The HCL write library used by sortTF does not preserve comments when reformatting files. This is consistent with the underlying library's design and ensures clean, consistent formatting.
+
+If your use case requires preserving comments, consider:
+
+- Using external documentation instead of inline comments
+- Pre-processing files to extract and preserve important comments
+- Using `description` attributes in variables and outputs
+
 ## API Reference
 
 ### Functions

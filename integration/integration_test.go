@@ -987,7 +987,16 @@ variable "name" {
 
 // TestIntegration_FixtureSuite tests all fixture files can be processed
 func TestIntegration_FixtureSuite(t *testing.T) {
-	fixtureCategories := []string{"syntax", "structure", "types", "control", "realistic"}
+	fixtureCategories := []string{
+		"syntax",
+		"structure",
+		"types",
+		"control",
+		"realistic",
+		"edge_cases",
+		"real_world",
+		"large",
+	}
 
 	for _, category := range fixtureCategories {
 		t.Run(category, func(t *testing.T) {
@@ -1047,10 +1056,25 @@ func TestIntegration_FixtureSuite(t *testing.T) {
 				if exitCode != 0 {
 					t.Errorf("fixture %s failed\nstdout: %s\nstderr: %s", name, stdout, stderr)
 				}
+
+				// Verify output is valid by reading it back
+				//nolint:gosec // G304: Test file path is controlled
+				result, err := os.ReadFile(tmpFile)
+				if err != nil {
+					t.Fatalf("failed to read sorted file: %v", err)
+				}
+
+				// Check that output is not empty (unless original was empty/whitespace)
+				// Skip this check for files that are intentionally empty or only have comments
+				if len(strings.TrimSpace(string(content))) > 50 && len(result) == 0 {
+					t.Errorf("fixture %s: output is empty but input was not", name)
+				}
 			}
 
 			if fixtureCount == 0 {
 				t.Errorf("no fixtures found in %s", category)
+			} else {
+				t.Logf("Successfully processed %d fixtures in %s", fixtureCount, category)
 			}
 		})
 	}
@@ -2081,6 +2105,232 @@ func TestSystem_SpecialCharactersInPaths(t *testing.T) {
 			if !tt.wantErr && exitCode != 0 {
 				t.Errorf("unexpected error with exit code %d", exitCode)
 			}
+		})
+	}
+}
+
+// TestIntegration_EdgeCaseFixtures tests edge case fixtures specifically
+func TestIntegration_EdgeCaseFixtures(t *testing.T) {
+	tests := []struct {
+		name    string
+		fixture string
+		checks  func(t *testing.T, output string)
+	}{
+		{
+			name:    "deep_nesting",
+			fixture: "deep_nesting.tf",
+			checks: func(t *testing.T, output string) {
+				// Should preserve deeply nested blocks
+				if !strings.Contains(output, "provisioner") {
+					t.Error("should preserve nested provisioner blocks")
+				}
+				if !strings.Contains(output, "nested") {
+					t.Error("should preserve nested blocks")
+				}
+			},
+		},
+		{
+			name:    "lifecycle_and_meta",
+			fixture: "lifecycle_and_meta.tf",
+			checks: func(t *testing.T, output string) {
+				// Should preserve lifecycle blocks
+				if !strings.Contains(output, "lifecycle") {
+					t.Error("should preserve lifecycle blocks")
+				}
+			},
+		},
+		{
+			name:    "long_values",
+			fixture: "long_values.tf",
+			checks: func(t *testing.T, output string) {
+				// Should handle long string values
+				if len(output) < 100 {
+					t.Error("output too short, long values may have been lost")
+				}
+			},
+		},
+		{
+			name:    "many_similar_names",
+			fixture: "many_similar_names.tf",
+			checks: func(t *testing.T, output string) {
+				// Should sort many similar names alphabetically
+				// Check that resources are present
+				if !strings.Contains(output, "resource \"aws_instance\"") {
+					t.Error("aws_instance resources not found")
+				}
+				if !strings.Contains(output, "resource \"aws_subnet\"") {
+					t.Error("aws_subnet resources not found")
+				}
+				// Check that instance resources come before subnet resources (alphabetical)
+				instanceIdx := strings.Index(output, "resource \"aws_instance\"")
+				subnetIdx := strings.Index(output, "resource \"aws_subnet\"")
+				if instanceIdx == -1 || subnetIdx == -1 {
+					t.Error("resources not found")
+					return
+				}
+				if instanceIdx > subnetIdx {
+					t.Error("resources not sorted alphabetically (aws_instance should come before aws_subnet)")
+				}
+			},
+		},
+		{
+			name:    "special_characters",
+			fixture: "special_characters.tf",
+			checks: func(t *testing.T, output string) {
+				// Should preserve special characters in strings
+				if len(output) < 50 {
+					t.Error("output suspiciously short")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixturePath := filepath.Join("..", "testdata", "fixtures", "edge_cases", tt.fixture)
+
+			// Check if fixture exists
+			if _, err := os.Stat(fixturePath); os.IsNotExist(err) {
+				t.Skipf("Fixture %s not found", tt.fixture)
+			}
+
+			tmpDir := t.TempDir()
+			tmpFile := filepath.Join(tmpDir, tt.fixture)
+
+			//nolint:gosec // G304: Test fixture path is controlled
+			content, err := os.ReadFile(fixturePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			//nolint:gosec // G306: Test files can use 0644
+			if err := os.WriteFile(tmpFile, content, 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			_, stderr, exitCode := runSortTF(t, tmpFile)
+
+			if exitCode != 0 {
+				t.Errorf("fixture %s failed with exit code %d\nstderr: %s", tt.fixture, exitCode, stderr)
+			}
+
+			// Read sorted result
+			//nolint:gosec // G304: Test file path is controlled
+			result, err := os.ReadFile(tmpFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if tt.checks != nil {
+				tt.checks(t, string(result))
+			}
+		})
+	}
+}
+
+// TestIntegration_LargeFileFixtures tests large file fixtures
+func TestIntegration_LargeFileFixtures(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping large file tests in short mode")
+	}
+
+	tests := []struct {
+		name         string
+		fixture      string
+		minLines     int // Minimum expected lines in output
+		checkContent func(t *testing.T, output string)
+	}{
+		{
+			name:     "aws_multi_region",
+			fixture:  "aws_multi_region.tf",
+			minLines: 400,
+			checkContent: func(t *testing.T, output string) {
+				// Should contain multiple regions
+				if !strings.Contains(output, "provider") {
+					t.Error("should contain provider blocks")
+				}
+			},
+		},
+		{
+			name:     "kubernetes_deployment",
+			fixture:  "kubernetes_deployment.tf",
+			minLines: 300,
+			checkContent: func(t *testing.T, output string) {
+				// Should contain kubernetes resources
+				if !strings.Contains(output, "kubernetes") {
+					t.Error("should contain kubernetes resources")
+				}
+			},
+		},
+		{
+			name:     "performance_test",
+			fixture:  "performance_test.tf",
+			minLines: 1500,
+			checkContent: func(t *testing.T, output string) {
+				// Very large file with many resources
+				if !strings.Contains(output, "resource") {
+					t.Error("should contain resource blocks")
+				}
+				// Count number of resources (rough check)
+				count := strings.Count(output, "resource \"")
+				if count < 50 {
+					t.Errorf("expected at least 50 resources, got %d", count)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixturePath := filepath.Join("..", "testdata", "fixtures", "large", tt.fixture)
+
+			// Check if fixture exists
+			if _, err := os.Stat(fixturePath); os.IsNotExist(err) {
+				t.Skipf("Fixture %s not found", tt.fixture)
+			}
+
+			tmpDir := t.TempDir()
+			tmpFile := filepath.Join(tmpDir, tt.fixture)
+
+			//nolint:gosec // G304: Test fixture path is controlled
+			content, err := os.ReadFile(fixturePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			t.Logf("Processing large fixture %s (%d bytes)", tt.fixture, len(content))
+
+			//nolint:gosec // G306: Test files can use 0644
+			if err := os.WriteFile(tmpFile, content, 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			stdout, stderr, exitCode := runSortTF(t, tmpFile)
+
+			if exitCode != 0 {
+				t.Errorf("fixture %s failed with exit code %d\nstdout: %s\nstderr: %s",
+					tt.fixture, exitCode, stdout, stderr)
+			}
+
+			// Read sorted result
+			//nolint:gosec // G304: Test file path is controlled
+			result, err := os.ReadFile(tmpFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			resultStr := string(result)
+			lines := strings.Count(resultStr, "\n")
+
+			if lines < tt.minLines {
+				t.Errorf("output has %d lines, expected at least %d", lines, tt.minLines)
+			}
+
+			if tt.checkContent != nil {
+				tt.checkContent(t, resultStr)
+			}
+
+			t.Logf("Successfully processed %s: %d lines, %d bytes", tt.fixture, lines, len(result))
 		})
 	}
 }
