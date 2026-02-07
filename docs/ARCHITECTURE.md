@@ -256,7 +256,7 @@ func SortBlocks(file *File) {
 ```go
 func Format(file *File) ([]byte, error) {
     // Apply terraform fmt standards
-    // Preserve comments
+    // Note: Comments are not preserved (HCL library limitation)
     // Generate output
 }
 ```
@@ -613,7 +613,7 @@ BenchmarkSortFile/large-8           500  3200000 ns/op 1280000 B/op 14000 allocs
 
 - Battle-tested by Terraform itself
 - Correct handling of all HCL edge cases
-- Comment preservation
+- Standard formatting aligned with terraform fmt
 - Active maintenance
 
 **Trade-offs:**

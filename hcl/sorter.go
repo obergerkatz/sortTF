@@ -78,6 +78,65 @@ func getBlockType(name string) BlockType {
 	}
 }
 
+// copyBlockClean creates a clean copy of a block without token baggage.
+// This prevents excessive blank lines from removed comments being carried over.
+// The function recursively copies attributes and nested blocks.
+func copyBlockClean(src *hclwrite.Block) *hclwrite.Block {
+	// Create new block with same type and labels
+	newBlock := hclwrite.NewBlock(src.Type(), src.Labels())
+
+	// Get source body
+	srcBody := src.Body()
+	newBody := newBlock.Body()
+
+	// Copy attributes only (no comment tokens)
+	attributes := srcBody.Attributes()
+
+	// If for_each exists, write it first
+	if attr, ok := attributes["for_each"]; ok {
+		newBody.SetAttributeRaw("for_each", attr.Expr().BuildTokens(nil))
+	}
+
+	// Get sorted attribute names (excluding for_each)
+	var attrNames []string
+	for name := range attributes {
+		if name != "for_each" {
+			attrNames = append(attrNames, name)
+		}
+	}
+	sort.Strings(attrNames)
+
+	// Copy attributes in sorted order
+	for _, name := range attrNames {
+		newBody.SetAttributeRaw(name, attributes[name].Expr().BuildTokens(nil))
+	}
+
+	// Recursively copy nested blocks
+	nestedBlocks := srcBody.Blocks()
+	if len(nestedBlocks) > 0 {
+		// Sort nested blocks by type and labels
+		sort.SliceStable(nestedBlocks, func(i, j int) bool {
+			typeI := getBlockType(nestedBlocks[i].Type())
+			typeJ := getBlockType(nestedBlocks[j].Type())
+			typeOrderI := blockTypeOrder[typeI]
+			typeOrderJ := blockTypeOrder[typeJ]
+
+			if typeOrderI != typeOrderJ {
+				return typeOrderI < typeOrderJ
+			}
+
+			return compareLabels(nestedBlocks[i].Labels(), nestedBlocks[j].Labels())
+		})
+
+		// Copy nested blocks cleanly
+		for _, nestedBlock := range nestedBlocks {
+			newBody.AppendBlock(copyBlockClean(nestedBlock))
+		}
+	}
+
+	return newBlock
+}
+
 // SortHCLFile sorts all blocks and attributes in an HCL file.
 //
 // It sorts blocks by type according to Terraform conventions
@@ -103,11 +162,11 @@ func SortHCLFile(file *hclwrite.File) *hclwrite.File {
 
 	// Add sorted blocks to the new file
 	for i, block := range blocks {
-		// Sort attributes within the block
-		sortBlockAttributes(block.Block)
+		// Create a clean copy of the block to avoid token baggage
+		cleanBlock := copyBlockClean(block.Block)
 
-		// Add the block to the new file
-		body.AppendBlock(block.Block)
+		// Add the clean block to the new file
+		body.AppendBlock(cleanBlock)
 
 		// Add a newline after each block except the last one
 		if i < len(blocks)-1 {

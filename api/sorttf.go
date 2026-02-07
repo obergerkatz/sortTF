@@ -3,6 +3,12 @@
 // This package can be imported and used in other Go programs without needing
 // to shell out to the CLI. It provides clean, testable functions with no I/O side effects.
 //
+// # Important Note
+//
+// Comments are removed during processing. The HCL write library does not preserve
+// comments when reformatting files. This ensures clean, consistent formatting but
+// means inline comments will be lost during sorting operations.
+//
 // Example usage:
 //
 //	import "sorttf/api"
@@ -127,13 +133,14 @@ func SortFile(path string, opts Options) error {
 	}
 
 	// Handle modes
-	if opts.Validate {
-		return ErrNeedsSorting
-	}
-
+	// Dry-run takes precedence over validate (non-destructive preview)
 	if opts.DryRun {
 		// Don't write, just indicate changes would be made
 		return nil
+	}
+
+	if opts.Validate {
+		return ErrNeedsSorting
 	}
 
 	// Write atomically (normal mode)
