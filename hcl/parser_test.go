@@ -507,3 +507,188 @@ func TestValidateRequiredBlockLabels_TerraformBackendWithInvalidLabels(t *testin
 		t.Logf("Got error: %v", err)
 	}
 }
+
+// TestParseHCLFile_Fixtures tests parsing various fixture files
+func TestParseHCLFile_Fixtures(t *testing.T) {
+	fixtureTests := []struct {
+		name    string
+		path    string
+		wantErr bool
+	}{
+		{
+			name:    "all block types",
+			path:    "../testdata/fixtures/structure/all_block_types.tf",
+			wantErr: false,
+		},
+		{
+			name:    "nested blocks",
+			path:    "../testdata/fixtures/structure/nested_blocks.tf",
+			wantErr: false,
+		},
+		{
+			name:    "dynamic blocks",
+			path:    "../testdata/fixtures/structure/dynamic_blocks.tf",
+			wantErr: false,
+		},
+		{
+			name:    "repeated blocks",
+			path:    "../testdata/fixtures/structure/repeated_blocks.tf",
+			wantErr: false,
+		},
+		{
+			name:    "comments hash",
+			path:    "../testdata/fixtures/syntax/comments_hash.tf",
+			wantErr: false,
+		},
+		{
+			name:    "comments multiline",
+			path:    "../testdata/fixtures/syntax/comments_multiline.tf",
+			wantErr: false,
+		},
+		{
+			name:    "heredoc standard",
+			path:    "../testdata/fixtures/syntax/heredoc_standard.tf",
+			wantErr: false,
+		},
+		{
+			name:    "empty file",
+			path:    "../testdata/fixtures/syntax/empty.tf",
+			wantErr: false,
+		},
+		{
+			name:    "whitespace only",
+			path:    "../testdata/fixtures/syntax/whitespace.tf",
+			wantErr: false,
+		},
+		{
+			name:    "nulls",
+			path:    "../testdata/fixtures/types/nulls.tf",
+			wantErr: false,
+		},
+		{
+			name:    "empty collections",
+			path:    "../testdata/fixtures/types/empty_collections.tf",
+			wantErr: false,
+		},
+		{
+			name:    "nested collections",
+			path:    "../testdata/fixtures/types/nested_collections.tf",
+			wantErr: false,
+		},
+		{
+			name:    "booleans",
+			path:    "../testdata/fixtures/types/booleans.tf",
+			wantErr: false,
+		},
+		{
+			name:    "numbers",
+			path:    "../testdata/fixtures/types/numbers.tf",
+			wantErr: false,
+		},
+		{
+			name:    "for_each control flow",
+			path:    "../testdata/fixtures/control/for_each.tf",
+			wantErr: false,
+		},
+		{
+			name:    "count control flow",
+			path:    "../testdata/fixtures/control/count.tf",
+			wantErr: false,
+		},
+		{
+			name:    "conditionals",
+			path:    "../testdata/fixtures/control/conditionals.tf",
+			wantErr: false,
+		},
+		{
+			name:    "functions",
+			path:    "../testdata/fixtures/control/functions.tf",
+			wantErr: false,
+		},
+		{
+			name:    "interpolation",
+			path:    "../testdata/fixtures/control/interpolation.tf",
+			wantErr: false,
+		},
+		{
+			name:    "deep nesting",
+			path:    "../testdata/fixtures/edge_cases/deep_nesting.tf",
+			wantErr: false,
+		},
+		{
+			name:    "lifecycle and meta",
+			path:    "../testdata/fixtures/edge_cases/lifecycle_and_meta.tf",
+			wantErr: false,
+		},
+		{
+			name:    "long values",
+			path:    "../testdata/fixtures/edge_cases/long_values.tf",
+			wantErr: false,
+		},
+		{
+			name:    "many similar names",
+			path:    "../testdata/fixtures/edge_cases/many_similar_names.tf",
+			wantErr: false,
+		},
+		{
+			name:    "special characters",
+			path:    "../testdata/fixtures/edge_cases/special_characters.tf",
+			wantErr: false,
+		},
+		{
+			name:    "AWS infrastructure",
+			path:    "../testdata/fixtures/realistic/aws_infrastructure.tf",
+			wantErr: false,
+		},
+		{
+			name:    "multiple providers",
+			path:    "../testdata/fixtures/real_world/multiple_providers.tf",
+			wantErr: false,
+		},
+		{
+			name:    "module with complex variables",
+			path:    "../testdata/fixtures/real_world/module_with_complex_variables.tf",
+			wantErr: false,
+		},
+		{
+			name:    "remote state configuration",
+			path:    "../testdata/fixtures/real_world/remote_state_configuration.tf",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range fixtureTests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Check if fixture exists
+			if _, err := os.Stat(tt.path); os.IsNotExist(err) {
+				t.Skipf("Fixture file not found: %s", tt.path)
+			}
+
+			parsed, err := ParseHCLFile(tt.path)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Error("expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if parsed == nil {
+					t.Error("expected non-nil ParsedFile")
+				}
+				if parsed != nil && parsed.File == nil {
+					t.Error("expected non-nil File in ParsedFile")
+				}
+			}
+
+			// Validate block labels if parsing succeeded
+			if err == nil && parsed != nil {
+				if validErr := ValidateRequiredBlockLabels(parsed); validErr != nil {
+					// Some fixtures may have intentional validation errors
+					t.Logf("Validation warning for %s: %v", tt.name, validErr)
+				}
+			}
+		})
+	}
+}

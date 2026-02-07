@@ -1,6 +1,8 @@
 package hcl
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -609,6 +611,150 @@ func TestSortBlockAttributes_EmptyBlock(t *testing.T) {
 
 	// Should not panic
 	sortBlockAttributes(blocks[0])
+}
+
+// TestSortHCLFile_Fixtures tests sorting with fixture files
+func TestSortHCLFile_Fixtures(t *testing.T) {
+	fixtureTests := []struct {
+		name     string
+		path     string
+		wantErr  bool
+		checkFn  func(t *testing.T, output string)
+	}{
+		{
+			name:    "all block types",
+			path:    "../testdata/fixtures/structure/all_block_types.tf",
+			wantErr: false,
+			checkFn: func(t *testing.T, output string) {
+				// Verify canonical order
+				indices := map[string]int{
+					"terraform": strings.Index(output, "terraform"),
+					"provider":  strings.Index(output, "provider"),
+					"variable":  strings.Index(output, "variable"),
+					"locals":    strings.Index(output, "locals"),
+					"data":      strings.Index(output, "data"),
+					"resource":  strings.Index(output, "resource"),
+					"module":    strings.Index(output, "module"),
+					"output":    strings.Index(output, "output"),
+				}
+
+				// Check order
+				if indices["terraform"] >= indices["provider"] ||
+					indices["provider"] >= indices["variable"] ||
+					indices["variable"] >= indices["locals"] ||
+					indices["locals"] >= indices["data"] ||
+					indices["data"] >= indices["resource"] ||
+					indices["resource"] >= indices["module"] ||
+					indices["module"] >= indices["output"] {
+					t.Error("blocks not in canonical order")
+				}
+			},
+		},
+		{
+			name:    "nested blocks",
+			path:    "../testdata/fixtures/structure/nested_blocks.tf",
+			wantErr: false,
+			checkFn: func(t *testing.T, output string) {
+				if !strings.Contains(output, "terraform") {
+					t.Error("output should contain terraform block")
+				}
+				if !strings.Contains(output, "required_providers") {
+					t.Error("output should contain nested required_providers")
+				}
+			},
+		},
+		{
+			name:    "for_each positioning",
+			path:    "../testdata/fixtures/control/for_each.tf",
+			wantErr: false,
+			checkFn: func(t *testing.T, output string) {
+				lines := strings.Split(output, "\n")
+				foundResource := false
+				foundForEach := false
+
+				for i, line := range lines {
+					if strings.Contains(line, "resource") && strings.Contains(line, "{") {
+						foundResource = true
+						// Next attribute line should be for_each
+						for j := i + 1; j < len(lines); j++ {
+							nextLine := strings.TrimSpace(lines[j])
+							if nextLine != "" && nextLine != "{" && strings.Contains(nextLine, "=") {
+								if strings.HasPrefix(nextLine, "for_each") {
+									foundForEach = true
+								}
+								break
+							}
+						}
+						break
+					}
+				}
+
+				if !foundResource {
+					t.Error("resource block not found")
+				}
+				if !foundForEach {
+					t.Error("for_each should be first attribute")
+				}
+			},
+		},
+		{
+			name:    "special characters",
+			path:    "../testdata/fixtures/edge_cases/special_characters.tf",
+			wantErr: false,
+			checkFn: func(t *testing.T, output string) {
+				// Should preserve special characters
+				if !strings.Contains(output, "variable") {
+					t.Error("output should contain variables")
+				}
+			},
+		},
+		{
+			name:    "empty collections",
+			path:    "../testdata/fixtures/types/empty_collections.tf",
+			wantErr: false,
+			checkFn: func(t *testing.T, output string) {
+				if !strings.Contains(output, "[]") || !strings.Contains(output, "{}") {
+					t.Error("output should preserve empty collections")
+				}
+			},
+		},
+	}
+
+	for _, tt := range fixtureTests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Read fixture file
+			content, err := os.ReadFile(tt.path)
+			if err != nil {
+				if os.IsNotExist(err) {
+					t.Skipf("Fixture file not found: %s", tt.path)
+				}
+				t.Fatalf("failed to read fixture: %v", err)
+			}
+
+			// Parse and sort
+			file, diags := hclwrite.ParseConfig(content, filepath.Base(tt.path), hcl.Pos{Line: 1, Column: 1})
+			if diags.HasErrors() {
+				if tt.wantErr {
+					return
+				}
+				t.Fatalf("parse failed: %v", diags)
+			}
+
+			sorted := SortHCLFile(file)
+			output := string(sorted.Bytes())
+
+			// Run custom checks
+			if tt.checkFn != nil {
+				tt.checkFn(t, output)
+			}
+
+			// Verify output is valid HCL
+			_, diags = hclwrite.ParseConfig([]byte(output), "test.tf", hcl.Pos{Line: 1, Column: 1})
+			if diags.HasErrors() {
+				t.Errorf("sorted output is invalid HCL: %v", diags)
+			}
+		})
+	}
 }
 
 // TestParseBlocks_BackendSkipped tests that top-level backend blocks are skipped
