@@ -31,7 +31,6 @@ linters:
     - govet # Go vet
     - ineffassign # Detects ineffectual assignments
     - staticcheck # Advanced Go linting
-    - typecheck # Type checking
     - unused # Checks for unused code
     # Code quality
     - gocyclo # Cyclomatic complexity
