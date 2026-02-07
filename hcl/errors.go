@@ -12,14 +12,21 @@ import (
 // without relying on string matching.
 type ErrorKind int
 
+// Error kind constants for categorizing HCL errors.
 const (
-	KindUnknown    ErrorKind = iota // Unknown or uncategorized error
-	KindParsing                     // HCL parsing or syntax error
-	KindValidation                  // Semantic validation error (e.g., wrong label count)
-	KindFormatting                  // Error during formatting
-	KindSorting                     // Error during sorting operation
+	// KindUnknown represents an unknown or uncategorized error.
+	KindUnknown ErrorKind = iota
+	// KindParsing represents an HCL parsing or syntax error.
+	KindParsing
+	// KindValidation represents a semantic validation error (e.g., wrong label count).
+	KindValidation
+	// KindFormatting represents an error during formatting.
+	KindFormatting
+	// KindSorting represents an error during sorting operation.
+	KindSorting
 )
 
+//nolint:revive // exported: HCLError is intentionally named to indicate HCL-specific errors
 // HCLError is the unified error type for HCL operations.
 // It wraps an underlying error with context about the operation, file path, and error category.
 type HCLError struct {
@@ -50,6 +57,7 @@ func (e *HCLError) Unwrap() error {
 	return e.Err
 }
 
+//nolint:revive // exported: HCLParseError is intentionally named to indicate HCL-specific parse errors
 // HCLParseError represents a syntax error with diagnostics.
 // This is kept separate from HCLError because it has a fundamentally different shape
 // (holds hcl.Diagnostics instead of a simple error).

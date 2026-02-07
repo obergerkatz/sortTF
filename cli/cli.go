@@ -75,11 +75,12 @@ func runMainLogic(config *config.Config, stdout, stderr io.Writer) int {
 	// Check if the path is a file or directory
 	fileInfo, err := os.Stat(config.Root)
 	if err != nil {
-		if os.IsNotExist(err) {
+		switch {
+		case os.IsNotExist(err):
 			_, _ = errorColor.Fprintf(stderr, "❌ Path '%s' does not exist\n", fileColor.Sprint(config.Root))
-		} else if os.IsPermission(err) {
+		case os.IsPermission(err):
 			_, _ = errorColor.Fprintf(stderr, "🔒 Permission denied accessing '%s'\n", fileColor.Sprint(config.Root))
-		} else {
+		default:
 			_, _ = errorColor.Fprintf(stderr, "❌ Error accessing '%s': %v\n", fileColor.Sprint(config.Root), err)
 		}
 		return 1
@@ -90,11 +91,12 @@ func runMainLogic(config *config.Config, stdout, stderr io.Writer) int {
 	if fileInfo.IsDir() {
 		// It's a directory - validate and find files
 		if err := files.ValidateDirectoryPath(config.Root); err != nil {
-			if files.IsNotExistError(err) {
+			switch {
+			case files.IsNotExistError(err):
 				_, _ = errorColor.Fprintf(stderr, "❌ Directory '%s' does not exist\n", fileColor.Sprint(config.Root))
-			} else if files.IsPermissionError(err) {
+			case files.IsPermissionError(err):
 				_, _ = errorColor.Fprintf(stderr, "🔒 Permission denied accessing directory '%s'\n", fileColor.Sprint(config.Root))
-			} else {
+			default:
 				_, _ = errorColor.Fprintf(stderr, "❌ Error validating directory '%s': %v\n", fileColor.Sprint(config.Root), err)
 			}
 			return 1
@@ -110,11 +112,12 @@ func runMainLogic(config *config.Config, stdout, stderr io.Writer) int {
 				path = e.Path
 			}
 
-			if files.IsNotExistError(err) {
+			switch {
+			case files.IsNotExistError(err):
 				_, _ = errorColor.Fprintf(stderr, "❌ Path '%s' does not exist\n", fileColor.Sprint(path))
-			} else if files.IsPermissionError(err) {
+			case files.IsPermissionError(err):
 				_, _ = errorColor.Fprintf(stderr, "🔒 Permission denied accessing '%s'\n", fileColor.Sprint(path))
-			} else {
+			default:
 				_, _ = errorColor.Fprintf(stderr, "❌ Error finding files: %v\n", err)
 			}
 			return 1
@@ -141,7 +144,7 @@ func runMainLogic(config *config.Config, stdout, stderr io.Writer) int {
 	}
 
 	// Process files (concurrently for better performance)
-	processedCount, errorCount, _ := processFilesConcurrent(filePaths, config, stdout, stderr)
+	processedCount, errorCount := processFilesConcurrent(filePaths, config, stdout, stderr)
 
 	// Print summary
 	if config.DryRun {
@@ -173,7 +176,7 @@ func isSupportedFile(filePath string) bool {
 // It uses the api.SortFile API and handles different modes (normal, dry-run, validate).
 // Returns nil on success, errors.ErrNoChanges if file is already sorted,
 // or an error if processing fails.
-func processFile(filePath string, config *config.Config, stdout, stderr io.Writer) error {
+func processFile(filePath string, config *config.Config, stdout, _ io.Writer) error {
 	if config.Verbose {
 		_, _ = infoColor.Fprintf(stdout, "🔄 Processing: %s\n", fileColor.Sprint(filePath))
 	}
@@ -200,6 +203,7 @@ func processFile(filePath string, config *config.Config, stdout, stderr io.Write
 		_, _ = warningColor.Fprintf(stdout, "⚠️  Needs update: %s\n", fileColor.Sprint(filePath))
 
 		// Get original and sorted content for diff
+		//nolint:gosec // G304: User input expected for file tool
 		origContent, _ := os.ReadFile(filePath)
 		sortedContent, _, _ := api.GetSortedContent(filePath)
 
@@ -217,6 +221,7 @@ func processFile(filePath string, config *config.Config, stdout, stderr io.Write
 			_, _ = warningColor.Fprintf(stdout, "📝 Would update: %s\n", fileColor.Sprint(filePath))
 
 			// Get original and sorted content for diff
+			//nolint:gosec // G304: File path comes from user input, which is expected for a file processing tool
 			origContent, _ := os.ReadFile(filePath)
 			sortedContent, _, _ := api.GetSortedContent(filePath)
 
@@ -252,13 +257,12 @@ type fileResult struct {
 // It automatically determines worker count based on CPU cores (2x for I/O overlap).
 // Falls back to serial processing for < 4 files or when verbose mode is enabled.
 //
-// Returns (processedCount, errorCount, noChangesCount) where:
+// Returns (processedCount, errorCount) where:
 //   - processedCount: files that were successfully sorted/modified
 //   - errorCount: files that encountered errors
-//   - noChangesCount: files that were already sorted
-func processFilesConcurrent(filePaths []string, config *config.Config, stdout, stderr io.Writer) (int, int, int) {
+func processFilesConcurrent(filePaths []string, config *config.Config, stdout, stderr io.Writer) (int, int) {
 	if len(filePaths) == 0 {
-		return 0, 0, 0
+		return 0, 0
 	}
 
 	// Determine worker count: min(numFiles, numCPU * 2)
@@ -326,7 +330,6 @@ func processFilesConcurrent(filePaths []string, config *config.Config, stdout, s
 	// (order doesn't matter for performance, but makes output readable)
 	processedCount := 0
 	errorCount := 0
-	noChangesCount := 0
 
 	for result := range results {
 		// Write output atomically
@@ -338,8 +341,9 @@ func processFilesConcurrent(filePaths []string, config *config.Config, stdout, s
 		}
 
 		// Count results
+		//nolint:revive,gocritic // empty-block and ifElseChain: This structure is clearer than alternatives
 		if result.noChanges {
-			noChangesCount++
+			// Already sorted, don't count as error or processed
 		} else if result.err != nil {
 			errorCount++
 			errors.PrintError(result.err, stderr)
@@ -348,21 +352,21 @@ func processFilesConcurrent(filePaths []string, config *config.Config, stdout, s
 		}
 	}
 
-	return processedCount, errorCount, noChangesCount
+	return processedCount, errorCount
 }
 
 // processFilesSerial processes files sequentially one at a time.
 // This is used for small batches (< 4 files) or when verbose mode is enabled
 // to maintain readable output order. Returns the same counts as processFilesConcurrent.
-func processFilesSerial(filePaths []string, config *config.Config, stdout, stderr io.Writer) (int, int, int) {
+func processFilesSerial(filePaths []string, config *config.Config, stdout, stderr io.Writer) (int, int) {
 	processedCount := 0
 	errorCount := 0
-	noChangesCount := 0
 
 	for _, filePath := range filePaths {
 		if err := processFile(filePath, config, stdout, stderr); err != nil {
+			//nolint:revive // empty-block: Explicit no-op for clarity
 			if stderrors.Is(err, errors.ErrNoChanges) {
-				noChangesCount++
+				// Already sorted, don't count as error or processed
 			} else {
 				errorCount++
 				errors.PrintError(err, stderr)
@@ -376,7 +380,7 @@ func processFilesSerial(filePaths []string, config *config.Config, stdout, stder
 		}
 	}
 
-	return processedCount, errorCount, noChangesCount
+	return processedCount, errorCount
 }
 
 // printUnifiedDiff prints a unified diff between original and formatted content.

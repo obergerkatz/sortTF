@@ -73,6 +73,7 @@ func TestParseHCLFile(t *testing.T) {
 			// Create temp file
 			tmpDir := t.TempDir()
 			filePath := filepath.Join(tmpDir, "test.tf")
+			//nolint:gosec // G306: Test files can use 0644 permissions
 			if err := os.WriteFile(filePath, []byte(tt.content), 0644); err != nil {
 				t.Fatal(err)
 			}
@@ -292,6 +293,7 @@ func TestValidateRequiredBlockLabels(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			filePath := filepath.Join(tmpDir, "test.tf")
+			//nolint:gosec // G306: Test files can use 0644 permissions
 			if err := os.WriteFile(filePath, []byte(tt.content), 0644); err != nil {
 				t.Fatal(err)
 			}
@@ -326,10 +328,8 @@ func TestValidateRequiredBlockLabels_NilInput(t *testing.T) {
 	var hclErr *HCLError
 	if !errors.As(err, &hclErr) {
 		t.Errorf("expected *HCLError, got %T", err)
-	} else {
-		if hclErr.Kind != KindValidation {
-			t.Errorf("expected KindValidation, got %v", hclErr.Kind)
-		}
+	} else if hclErr.Kind != KindValidation {
+		t.Errorf("expected KindValidation, got %v", hclErr.Kind)
 	}
 }
 
@@ -354,9 +354,10 @@ func TestValidateFilePath(t *testing.T) {
 	}{
 		{
 			name: "valid file",
-			setup: func(t *testing.T) string {
-				tmpDir := t.TempDir()
+			setup: func(_ *testing.T) string {
+				tmpDir := os.TempDir()
 				path := filepath.Join(tmpDir, "test.tf")
+				//nolint:gosec // G306: Test files can use 0644 permissions
 				_ = os.WriteFile(path, []byte("test"), 0644)
 				return path
 			},
@@ -364,7 +365,7 @@ func TestValidateFilePath(t *testing.T) {
 		},
 		{
 			name: "empty path",
-			setup: func(t *testing.T) string {
+			setup: func(*testing.T) string {
 				return ""
 			},
 			wantErr: true,
@@ -372,7 +373,7 @@ func TestValidateFilePath(t *testing.T) {
 		},
 		{
 			name: "non-existent file",
-			setup: func(t *testing.T) string {
+			setup: func(*testing.T) string {
 				return "/nonexistent/test.tf"
 			},
 			wantErr: true,
@@ -392,6 +393,7 @@ func TestValidateFilePath(t *testing.T) {
 				tmpDir := t.TempDir()
 				restrictedDir := filepath.Join(tmpDir, "restricted")
 				_ = os.Mkdir(restrictedDir, 0000)
+				//nolint:gosec // G302: Test cleanup needs to restore permissions
 				t.Cleanup(func() { _ = os.Chmod(restrictedDir, 0755) })
 				return filepath.Join(restrictedDir, "test.tf")
 			},
@@ -429,6 +431,7 @@ func TestValidateRequiredBlockLabels_BackendWithInvalidLabels(t *testing.T) {
 	content := `backend {
   bucket = "test"
 }`
+	//nolint:gosec // G306: Test file 0644
 	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -457,6 +460,7 @@ func TestValidateRequiredBlockLabels_BackendWithMultipleLabels(t *testing.T) {
 	content := `backend "s3" "extra" {
   bucket = "test"
 }`
+	//nolint:gosec // G306: Test file 0644
 	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -485,6 +489,7 @@ func TestValidateRequiredBlockLabels_TerraformBackendWithInvalidLabels(t *testin
     bucket = "test"
   }
 }`
+	//nolint:gosec // G306: Test file 0644
 	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}

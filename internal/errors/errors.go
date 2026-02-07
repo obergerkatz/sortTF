@@ -1,3 +1,4 @@
+//nolint:revive // var-naming: errors is an appropriate name for an error handling package
 // Package errors provides unified error handling for sortTF.
 //
 // This package defines sentinel errors for common conditions and a single
@@ -42,14 +43,22 @@ var (
 // Different kinds may be displayed with different colors or formatting.
 type ErrorKind int
 
+// Error kind constants for categorizing sortTF errors.
 const (
-	KindUnknown    ErrorKind = iota // Uncategorized error
-	KindFileSystem                  // File/directory access errors
-	KindParsing                     // HCL syntax errors
-	KindValidation                  // Semantic validation errors
-	KindFormatting                  // Formatting errors
-	KindSorting                     // Sorting operation errors
-	KindCLI                         // Command-line argument errors
+	// KindUnknown represents an uncategorized error.
+	KindUnknown ErrorKind = iota
+	// KindFileSystem represents file/directory access errors.
+	KindFileSystem
+	// KindParsing represents HCL syntax errors.
+	KindParsing
+	// KindValidation represents semantic validation errors.
+	KindValidation
+	// KindFormatting represents formatting errors.
+	KindFormatting
+	// KindSorting represents sorting operation errors.
+	KindSorting
+	// KindCLI represents command-line argument errors.
+	KindCLI
 )
 
 // Error is the unified error type for sortTF.

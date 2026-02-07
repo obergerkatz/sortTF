@@ -33,6 +33,7 @@ resource "aws_s3_bucket" "data" {
 	// Create 50 files to process
 	for i := 1; i <= 50; i++ {
 		filePath := filepath.Join(tmpDir, fmt.Sprintf("file%d.tf", i))
+		//nolint:gosec // G306: Benchmark test files can use 0644 permissions
 		if err := os.WriteFile(filePath, []byte(unsortedContent), 0644); err != nil {
 			b.Fatal(err)
 		}
@@ -88,6 +89,7 @@ resource "aws_s3_bucket" "data" {
 	// Create 50 files to process
 	for i := 1; i <= 50; i++ {
 		filePath := filepath.Join(tmpDir, fmt.Sprintf("file%d.tf", i))
+		//nolint:gosec // G306: Benchmark test files can use 0644 permissions
 		if err := os.WriteFile(filePath, []byte(unsortedContent), 0644); err != nil {
 			b.Fatal(err)
 		}

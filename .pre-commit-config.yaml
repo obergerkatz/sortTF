@@ -21,18 +21,18 @@ repos:
     rev: v0.21.0
     hooks:
       - id: yamlfmt
-        args: [-conf=.config/.yamlfmt.yaml]
+        args: [-conf=.yamlfmt.yaml]
   # 4) Linters
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.17.0
     hooks:
       - id: markdownlint-cli2
-        args: [--config, .config/.markdownlint.yaml, --fix]
+        args: [--config, .markdownlint.yaml, --fix]
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.37.1
     hooks:
       - id: yamllint
-        args: [--strict, --config-file=.config/.yamllint.yaml]
+        args: [--strict, --config-file=.yamllint.yaml]
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.10
     hooks:

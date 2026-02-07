@@ -1,3 +1,4 @@
+//nolint:revive // var-naming: api is an appropriate package name for an API layer
 package api
 
 import (
@@ -22,6 +23,7 @@ variable "environment" {
   type = string
 }
 `
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(testFile, []byte(unsortedContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -33,6 +35,7 @@ variable "environment" {
 	}
 
 	// Read result
+	//nolint:gosec // G304: Test file path is controlled
 	result, err := os.ReadFile(testFile)
 	if err != nil {
 		t.Fatal(err)
@@ -63,6 +66,7 @@ func TestSortFile_Validate(t *testing.T) {
   ami = "ami-12345"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(testFile, []byte(unsortedContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -74,6 +78,7 @@ func TestSortFile_Validate(t *testing.T) {
 	}
 
 	// File should not have been modified
+	//nolint:gosec // G304: Test path controlled
 	result, _ := os.ReadFile(testFile)
 	if string(result) != unsortedContent {
 		t.Error("File was modified in validate mode")
@@ -89,6 +94,7 @@ func TestSortFile_DryRun(t *testing.T) {
   ami = "ami-12345"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(testFile, []byte(unsortedContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -100,6 +106,7 @@ func TestSortFile_DryRun(t *testing.T) {
 	}
 
 	// File should not have been modified
+	//nolint:gosec // G304: Test file path is controlled
 	result, _ := os.ReadFile(testFile)
 	if string(result) != unsortedContent {
 		t.Error("File was modified in dry-run mode")
@@ -115,6 +122,7 @@ func TestGetSortedContent(t *testing.T) {
   ami = "ami-12345"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(testFile, []byte(unsortedContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -138,6 +146,7 @@ func TestGetSortedContent(t *testing.T) {
 	}
 
 	// Original file should not be modified
+	//nolint:gosec // G304: Test file path is controlled
 	result, _ := os.ReadFile(testFile)
 	if string(result) != unsortedContent {
 		t.Error("GetSortedContent modified the original file")
@@ -156,7 +165,9 @@ func TestSortFiles(t *testing.T) {
   ami = "ami-12345"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	_ = os.WriteFile(file1, []byte(content), 0644)
+	//nolint:gosec // G306: Test files can use 0644
 	_ = os.WriteFile(file2, []byte(content), 0644)
 
 	// Sort multiple files
@@ -183,6 +194,7 @@ func TestSortDirectory(t *testing.T) {
   ami = "ami-12345"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	_ = os.WriteFile(file1, []byte(content), 0644)
 
 	// Sort directory
@@ -227,6 +239,7 @@ func TestGetSortedContent_InvalidHCL(t *testing.T) {
 	invalidContent := `resource "aws_instance" "web" {
   ami = "ami-12345"
 ` // missing closing brace
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(testFile, []byte(invalidContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -247,6 +260,7 @@ func TestGetSortedContent_ValidationError(t *testing.T) {
   ami = "ami-12345"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(testFile, []byte(invalidContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -272,6 +286,7 @@ resource "aws_instance" "web" {
   instance_type = "t3.micro"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(testFile, []byte(sortedContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -303,6 +318,7 @@ func TestSortFile_ErrorCases(t *testing.T) {
 		tmpDir := t.TempDir()
 		testFile := filepath.Join(tmpDir, "invalid.tf")
 		invalidContent := `resource "aws_instance" "web" {`
+		//nolint:gosec // G306: Test files can use 0644
 		if err := os.WriteFile(testFile, []byte(invalidContent), 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -320,6 +336,7 @@ func TestSortFile_ErrorCases(t *testing.T) {
   type = string
 }
 `
+		//nolint:gosec // G306: Test files can use 0644
 		if err := os.WriteFile(testFile, []byte(sortedContent), 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -346,14 +363,17 @@ func TestSortFile_ReadOnlyDirectory(t *testing.T) {
   ami = "ami-12345"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(testFile, []byte(unsortedContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Make directory read-only
+	//nolint:gosec // G302: Test needs to set restrictive permissions
 	if err := os.Chmod(tmpDir, 0555); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G302: Test cleanup needs to restore permissions
 	defer func() { _ = os.Chmod(tmpDir, 0755) }() // Cleanup
 
 	err := SortFile(testFile, Options{})
@@ -388,6 +408,7 @@ func TestSortDirectory_ErrorCases(t *testing.T) {
 
 		// Create nested directory structure
 		nestedDir := filepath.Join(tmpDir, "modules", "vpc")
+		//nolint:gosec // G301: Test directories can use 0755 permissions
 		if err := os.MkdirAll(nestedDir, 0755); err != nil {
 			t.Fatal(err)
 		}
@@ -400,9 +421,11 @@ func TestSortDirectory_ErrorCases(t *testing.T) {
   ami = "ami-12345"
 }
 `
+		//nolint:gosec // G306: Test files can use 0644
 		if err := os.WriteFile(file1, []byte(content), 0644); err != nil {
 			t.Fatal(err)
 		}
+		//nolint:gosec // G306: Test files can use 0644
 		if err := os.WriteFile(file2, []byte(content), 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -429,6 +452,7 @@ func TestSortFiles_MixedResults(t *testing.T) {
   ami = "ami-12345"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(validFile, []byte(validContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -436,6 +460,7 @@ func TestSortFiles_MixedResults(t *testing.T) {
 	// Create invalid file
 	invalidFile := filepath.Join(tmpDir, "invalid.tf")
 	invalidContent := `resource "aws_instance" "web" {` // missing closing brace
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(invalidFile, []byte(invalidContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -474,6 +499,7 @@ func TestSortFile_DryRunWithAlreadySorted(t *testing.T) {
   type = string
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(testFile, []byte(sortedContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -495,6 +521,7 @@ func TestSortFile_RenameFailure(t *testing.T) {
 
 	// Create a subdirectory that will become read-only
 	subdir := filepath.Join(tmpDir, "readonly")
+	//nolint:gosec // G301: Test directories can use 0755 permissions
 	if err := os.Mkdir(subdir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -505,15 +532,18 @@ func TestSortFile_RenameFailure(t *testing.T) {
   ami = "ami-12345"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(testFile, []byte(unsortedContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Try to make directory read-only after file creation
 	// This may not always trigger a rename error on all systems
+	//nolint:gosec // G302: Test needs to set restrictive permissions
 	if err := os.Chmod(subdir, 0555); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G302: Test cleanup needs to restore permissions
 	defer func() { _ = os.Chmod(subdir, 0755) }() // Cleanup
 
 	err := SortFile(testFile, Options{})
@@ -559,6 +589,7 @@ func TestGetSortedContent_ComplexContent(t *testing.T) {
 			tmpDir := t.TempDir()
 			testFile := filepath.Join(tmpDir, "test.tf")
 
+			//nolint:gosec // G306: Test files can use 0644
 			if err := os.WriteFile(testFile, []byte(tt.content), 0644); err != nil {
 				t.Fatal(err)
 			}
@@ -582,6 +613,7 @@ func TestSortDirectory_WithDryRun(t *testing.T) {
   ami = "ami-12345"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(file1, []byte(unsortedContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -597,7 +629,7 @@ func TestSortDirectory_WithDryRun(t *testing.T) {
 	}
 
 	// File should not have been modified
-	content, _ := os.ReadFile(file1)
+	content, _ := os.ReadFile(file1) //nolint:gosec // G304: Test file path is controlled
 	if string(content) != unsortedContent {
 		t.Error("File was modified in dry run mode")
 	}
@@ -614,6 +646,7 @@ func TestSortDirectory_WithValidate(t *testing.T) {
   ami = "ami-12345"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(file1, []byte(unsortedContent), 0644); err != nil {
 		t.Fatal(err)
 	}

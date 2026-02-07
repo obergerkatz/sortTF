@@ -99,6 +99,7 @@ resource "aws_instance" "example" {
   instance_type = "t2.micro"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -131,6 +132,7 @@ variable "environment" {
   type = string
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -143,6 +145,7 @@ variable "environment" {
 	}
 
 	// Verify file was updated
+	//nolint:gosec // G304: Test file path is controlled
 	updatedContent, err := os.ReadFile(testFile)
 	if err != nil {
 		t.Fatal(err)
@@ -180,6 +183,7 @@ func TestRunCLI_DryRun(t *testing.T) {
   ami = "ami-12345"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(testFile, []byte(originalContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -197,6 +201,7 @@ func TestRunCLI_DryRun(t *testing.T) {
 	}
 
 	// Verify file was NOT modified
+	//nolint:gosec // G304: Test file path is controlled
 	currentContent, err := os.ReadFile(testFile)
 	if err != nil {
 		t.Fatal(err)
@@ -217,6 +222,7 @@ func TestRunCLI_Validate(t *testing.T) {
   ami = "ami-12345"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -235,6 +241,7 @@ func TestRunCLI_Validate(t *testing.T) {
 	}
 
 	// Verify file was NOT modified
+	//nolint:gosec // G304: Test file path is controlled
 	currentContent, err := os.ReadFile(testFile)
 	if err != nil {
 		t.Fatal(err)
@@ -253,6 +260,7 @@ func TestRunCLI_Verbose(t *testing.T) {
   type = string
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -276,6 +284,7 @@ func TestRunCLI_Recursive(t *testing.T) {
 
 	// Create nested directory structure
 	subDir := filepath.Join(tmpDir, "subdir")
+	//nolint:gosec // G301: Test use 0755
 	if err := os.MkdirAll(subDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -290,9 +299,11 @@ func TestRunCLI_Recursive(t *testing.T) {
   ami = "ami-123"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(file1, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(file2, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -317,6 +328,7 @@ func TestRunCLI_Directory(t *testing.T) {
 
 	// Create nested directory
 	subDir := filepath.Join(tmpDir, "subdir")
+	//nolint:gosec // G301: Test use 0755
 	if err := os.MkdirAll(subDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -331,9 +343,11 @@ func TestRunCLI_Directory(t *testing.T) {
   ami = "ami-123"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(file1, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(file2, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -365,6 +379,7 @@ func TestRunCLI_ConcurrentProcessing(t *testing.T) {
 `
 	for i := 1; i <= 10; i++ {
 		filePath := filepath.Join(tmpDir, fmt.Sprintf("file%d.tf", i))
+		//nolint:gosec // G306: Test files can use 0644
 		if err := os.WriteFile(filePath, []byte(unsortedContent), 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -386,6 +401,7 @@ func TestRunCLI_ConcurrentProcessing(t *testing.T) {
 	// Verify all files were actually processed (spot check a few)
 	for i := 1; i <= 3; i++ {
 		filePath := filepath.Join(tmpDir, fmt.Sprintf("file%d.tf", i))
+		//nolint:gosec // G304: Test file path is controlled
 		content, err := os.ReadFile(filePath)
 		if err != nil {
 			t.Fatal(err)
@@ -413,6 +429,7 @@ func TestRunCLI_InvalidSyntax(t *testing.T) {
   ami = "ami-123"
 }
 `
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(testFile, []byte(invalidContent), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -514,11 +531,13 @@ func TestRunCLI_TestdataComplex(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "complex.tf")
 
+	//nolint:gosec // G304: Test file path is controlled
 	originalContent, err := os.ReadFile(testFile)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(tmpFile, originalContent, 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -531,6 +550,7 @@ func TestRunCLI_TestdataComplex(t *testing.T) {
 	}
 
 	// Read the result
+	//nolint:gosec // G304: Test file path is controlled
 	processedContent, err := os.ReadFile(tmpFile)
 	if err != nil {
 		t.Fatal(err)
@@ -556,8 +576,8 @@ func TestRunCLI_TestdataComplex(t *testing.T) {
 		t.Error("Missing expected block types in output")
 	}
 
-	if !(terraformIdx < providerIdx && providerIdx < variableIdx && variableIdx < localsIdx &&
-		localsIdx < dataIdx && dataIdx < resourceIdx && resourceIdx < moduleIdx && moduleIdx < outputIdx) {
+	if terraformIdx >= providerIdx || providerIdx >= variableIdx || variableIdx >= localsIdx ||
+		localsIdx >= dataIdx || dataIdx >= resourceIdx || resourceIdx >= moduleIdx || moduleIdx >= outputIdx {
 		t.Error("Blocks are not in expected sorted order")
 	}
 }
@@ -574,11 +594,13 @@ func TestRunCLI_TestdataSorted(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "sorted.tf")
 
+	//nolint:gosec // G304: Test file path is controlled
 	originalContent, err := os.ReadFile(testFile)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(tmpFile, originalContent, 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -591,6 +613,7 @@ func TestRunCLI_TestdataSorted(t *testing.T) {
 	}
 
 	// File should not be modified since it's already sorted
+	//nolint:gosec // G304: Test file path is controlled
 	processedContent, err := os.ReadFile(tmpFile)
 	if err != nil {
 		t.Fatal(err)
@@ -613,11 +636,13 @@ func TestRunCLI_TestdataUnsorted(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "unsorted.tf")
 
+	//nolint:gosec // G304: Test file path is controlled
 	originalContent, err := os.ReadFile(testFile)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(tmpFile, originalContent, 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -630,6 +655,7 @@ func TestRunCLI_TestdataUnsorted(t *testing.T) {
 	}
 
 	// Read processed content
+	//nolint:gosec // G304: Test file path is controlled
 	processedContent, err := os.ReadFile(tmpFile)
 	if err != nil {
 		t.Fatal(err)
@@ -646,7 +672,7 @@ func TestRunCLI_TestdataUnsorted(t *testing.T) {
 		t.Error("Missing expected blocks in output")
 	}
 
-	if !(providerIdx < variableIdx && variableIdx < resourceIdx) {
+	if providerIdx >= variableIdx || variableIdx >= resourceIdx {
 		t.Errorf("Blocks not in expected order. Provider: %d, Variable: %d, Resource: %d",
 			providerIdx, variableIdx, resourceIdx)
 	}
@@ -672,11 +698,13 @@ func TestRunCLI_TestdataDirectory(t *testing.T) {
 			srcPath := filepath.Join(testDir, entry.Name())
 			dstPath := filepath.Join(tmpDir, entry.Name())
 
+			//nolint:gosec // G304: Test file path is controlled
 			content, err := os.ReadFile(srcPath)
 			if err != nil {
 				t.Fatal(err)
 			}
 
+			//nolint:gosec // G306: Test files can use 0644
 			if err := os.WriteFile(dstPath, content, 0644); err != nil {
 				t.Fatal(err)
 			}
@@ -708,11 +736,13 @@ func TestRunCLI_DryRunWithTestdata(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "unsorted.tf")
 
+	//nolint:gosec // G304: Test file path is controlled
 	originalContent, err := os.ReadFile(testFile)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(tmpFile, originalContent, 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -730,6 +760,7 @@ func TestRunCLI_DryRunWithTestdata(t *testing.T) {
 	}
 
 	// Verify file was NOT modified
+	//nolint:gosec // G304: Test file path is controlled
 	currentContent, err := os.ReadFile(tmpFile)
 	if err != nil {
 		t.Fatal(err)
@@ -752,11 +783,13 @@ func TestRunCLI_ValidateWithTestdata(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "unsorted.tf")
 
+	//nolint:gosec // G304: Test file path is controlled
 	originalContent, err := os.ReadFile(testFile)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(tmpFile, originalContent, 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -775,6 +808,7 @@ func TestRunCLI_ValidateWithTestdata(t *testing.T) {
 	}
 
 	// Verify file was NOT modified
+	//nolint:gosec // G304: Test file path is controlled
 	currentContent, err := os.ReadFile(tmpFile)
 	if err != nil {
 		t.Fatal(err)
@@ -791,6 +825,7 @@ func TestRunCLI_UnsupportedFileType(t *testing.T) {
 	testFile := filepath.Join(tmpDir, "test.txt")
 
 	content := "This is not a terraform file"
+	//nolint:gosec // G306: Test files can use 0644
 	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}

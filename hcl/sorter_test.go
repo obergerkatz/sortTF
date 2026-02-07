@@ -81,7 +81,7 @@ terraform {
 		t.Fatal("not all blocks found in output")
 	}
 
-	if !(terraformIdx < providerIdx && providerIdx < variableIdx && variableIdx < resourceIdx && resourceIdx < outputIdx) {
+	if terraformIdx >= providerIdx || providerIdx >= variableIdx || variableIdx >= resourceIdx || resourceIdx >= outputIdx {
 		t.Errorf("blocks not in correct order\nterraform:%d provider:%d variable:%d resource:%d output:%d",
 			terraformIdx, providerIdx, variableIdx, resourceIdx, outputIdx)
 		t.Logf("Output:\n%s", output)
@@ -115,7 +115,7 @@ variable "beta" {
 	betaIdx := strings.Index(output, "variable \"beta\"")
 	zebraIdx := strings.Index(output, "variable \"zebra\"")
 
-	if !(alphaIdx < betaIdx && betaIdx < zebraIdx) {
+	if alphaIdx >= betaIdx || betaIdx >= zebraIdx {
 		t.Errorf("variables not sorted alphabetically: alpha:%d beta:%d zebra:%d",
 			alphaIdx, betaIdx, zebraIdx)
 		t.Logf("Output:\n%s", output)
@@ -150,7 +150,7 @@ resource "aws_security_group" "app" {
 	bucketIdx := strings.Index(output, "resource \"aws_s3_bucket\" \"data\"")
 	sgIdx := strings.Index(output, "resource \"aws_security_group\" \"app\"")
 
-	if !(instanceIdx < bucketIdx && bucketIdx < sgIdx) {
+	if instanceIdx >= bucketIdx || bucketIdx >= sgIdx {
 		t.Errorf("resources not sorted alphabetically: instance:%d bucket:%d sg:%d",
 			instanceIdx, bucketIdx, sgIdx)
 		t.Logf("Output:\n%s", output)
@@ -457,7 +457,7 @@ variable "region" {
 	resourceIdx := strings.Index(formatted, "resource")
 	outputIdx := strings.Index(formatted, "output")
 
-	if !(variableIdx < resourceIdx && resourceIdx < outputIdx) {
+	if variableIdx >= resourceIdx || resourceIdx >= outputIdx {
 		t.Error("blocks not in correct order after SortAndFormatHCLFile")
 		t.Logf("Output:\n%s", formatted)
 	}
@@ -587,7 +587,7 @@ func TestSortHCLFile_DeeplyNestedBlocks(t *testing.T) {
 }
 
 // TestSortBlockAttributes_Nil tests nil block handling
-func TestSortBlockAttributes_Nil(t *testing.T) {
+func TestSortBlockAttributes_Nil(_ *testing.T) {
 	// Should not panic
 	sortBlockAttributes(nil)
 }
@@ -713,13 +713,13 @@ terraform {
 	}
 
 	// Verify ordering
-	if !(indices["terraform"] < indices["provider"] &&
-		indices["provider"] < indices["variable"] &&
-		indices["variable"] < indices["locals"] &&
-		indices["locals"] < indices["data"] &&
-		indices["data"] < indices["resource"] &&
-		indices["resource"] < indices["module"] &&
-		indices["module"] < indices["output"]) {
+	if indices["terraform"] >= indices["provider"] ||
+		indices["provider"] >= indices["variable"] ||
+		indices["variable"] >= indices["locals"] ||
+		indices["locals"] >= indices["data"] ||
+		indices["data"] >= indices["resource"] ||
+		indices["resource"] >= indices["module"] ||
+		indices["module"] >= indices["output"] {
 		t.Error("blocks not in correct canonical order")
 		t.Logf("Indices: %+v", indices)
 		t.Logf("Output:\n%s", output)

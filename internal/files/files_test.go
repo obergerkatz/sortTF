@@ -58,6 +58,7 @@ func TestIsValidFile_TableDriven(t *testing.T) {
 func TestIsValidFile_Symlink(t *testing.T) {
 	dir := t.TempDir()
 	target := filepath.Join(dir, "target.tf")
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(target, []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -80,6 +81,7 @@ func TestIsValidFile(t *testing.T) {
 
 	// .tf file
 	tfPath := filepath.Join(dir, "testfile.tf")
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(tfPath, []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -93,6 +95,7 @@ func TestIsValidFile(t *testing.T) {
 
 	// .hcl file
 	hclPath := filepath.Join(dir, "testfile.hcl")
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(hclPath, []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -106,6 +109,7 @@ func TestIsValidFile(t *testing.T) {
 
 	// .terraform.lock.hcl file
 	lockPath := filepath.Join(dir, ".terraform.lock.hcl")
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(lockPath, []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -119,6 +123,7 @@ func TestIsValidFile(t *testing.T) {
 
 	// .txt file
 	txtPath := filepath.Join(dir, "testfile.txt")
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(txtPath, []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -164,21 +169,27 @@ func TestIsValidFileEdgeCases(t *testing.T) {
 
 func TestFindFiles(t *testing.T) {
 	dir := t.TempDir()
+	//nolint:gosec // G301: Test directories can use 0755 permissions
 	if err := os.Mkdir(filepath.Join(dir, ".terraform"), 0755); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "main.hcl"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, ".terraform.lock.hcl"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "ignore.txt"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, ".terraform", "should_ignore.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -228,23 +239,29 @@ func TestFindFilesRecursiveEdgeCases(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create nested structure with various file types
+	//nolint:gosec // G301: Test directories can use 0755 permissions
 	if err := os.MkdirAll(filepath.Join(dir, "subdir", "deep"), 0755); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "subdir", "deep", "nested.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "subdir", "deep", "nested.hcl"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "subdir", "deep", "ignore.txt"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create .terraform directory in subdirectory
+	//nolint:gosec // G301: Test directories can use 0755 permissions
 	if err := os.Mkdir(filepath.Join(dir, "subdir", ".terraform"), 0755); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "subdir", ".terraform", "should_ignore.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -271,28 +288,35 @@ func TestFindFilesFileNameEdgeCases(t *testing.T) {
 	dir := t.TempDir()
 
 	// Test with files that have dots in names
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "my.config.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "terraform.backup.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "config.backup.hcl"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Test with files that start with dots
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, ".env.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, ".config.hcl"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Test with files that have spaces
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "my file.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "config file.hcl"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -313,59 +337,75 @@ func TestFindFilesIntegration(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create typical Terraform project structure
+	//nolint:gosec // G301: Test directories can use 0755 permissions
 	if err := os.MkdirAll(filepath.Join(dir, "modules", "vpc"), 0755); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G301: Test directories can use 0755 permissions
 	if err := os.MkdirAll(filepath.Join(dir, "environments", "dev"), 0755); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G301: Test directories can use 0755 permissions
 	if err := os.MkdirAll(filepath.Join(dir, "environments", "prod"), 0755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Main files
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "variables.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "outputs.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "terragrunt.hcl"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Module files
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "modules", "vpc", "main.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "modules", "vpc", "variables.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Environment files
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "environments", "dev", "main.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "environments", "dev", "terragrunt.hcl"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "environments", "prod", "main.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "environments", "prod", "terragrunt.hcl"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Files that should be ignored
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, ".terraform.lock.hcl"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -390,10 +430,12 @@ func TestFindFilesPerformance(t *testing.T) {
 	// Create many files to test performance
 	for i := 0; i < 1000; i++ {
 		if i%2 == 0 {
+			//nolint:gosec // G306: Test files can use 0644 permissions
 			if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("file%d.tf", i)), []byte(""), 0644); err != nil {
 				t.Fatal(err)
 			}
 		} else {
+			//nolint:gosec // G306: Test files can use 0644 permissions
 			if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("file%d.hcl", i)), []byte(""), 0644); err != nil {
 				t.Fatal(err)
 			}
@@ -402,6 +444,7 @@ func TestFindFilesPerformance(t *testing.T) {
 
 	// Add some non-target files
 	for i := 0; i < 100; i++ {
+		//nolint:gosec // G306: Test files can use 0644 permissions
 		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("file%d.txt", i)), []byte(""), 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -471,6 +514,7 @@ func TestValidateFilePath(t *testing.T) {
 
 	// Test with valid file
 	file := filepath.Join(dir, "test.tf")
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(file, []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -503,6 +547,7 @@ func TestValidateDirectoryPath(t *testing.T) {
 	// Test with file (should fail)
 	dir := t.TempDir()
 	file := filepath.Join(dir, "test.tf")
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(file, []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -609,16 +654,19 @@ func TestFindFilesRecursiveWithSkipDir(t *testing.T) {
 
 	// Create .terragrunt-cache directory that should be skipped
 	terragruntCacheDir := filepath.Join(dir, ".terragrunt-cache")
+	//nolint:gosec // G301: Test directories can use 0755 permissions
 	if err := os.Mkdir(terragruntCacheDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Add files in the cache directory (should be skipped)
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(terragruntCacheDir, "cached.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create valid files in root
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -654,9 +702,11 @@ func TestFindFilesRecursiveWithPermissionError(t *testing.T) {
 	if err := os.Mkdir(restrictedDir, 0000); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G302: Test cleanup needs to restore permissions
 	defer func() { _ = os.Chmod(restrictedDir, 0755) }() // Cleanup
 
 	// Create a file that should be accessible
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -681,16 +731,19 @@ func TestFindFilesNonRecursiveWithTerraformDir(t *testing.T) {
 
 	// Create .terraform directory
 	terraformDir := filepath.Join(dir, ".terraform")
+	//nolint:gosec // G301: Test directories can use 0755 permissions
 	if err := os.Mkdir(terraformDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Add file in .terraform directory
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(terraformDir, "cached.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create valid files in root
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -717,6 +770,7 @@ func TestFindFilesNonRecursiveWithSymlinks(t *testing.T) {
 
 	// Create a regular file
 	regularFile := filepath.Join(dir, "main.tf")
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(regularFile, []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -748,9 +802,11 @@ func TestFindFilesRecursiveSymlinkToDirectory(t *testing.T) {
 
 	// Create a subdirectory with a file
 	subdir := filepath.Join(dir, "subdir")
+	//nolint:gosec // G301: Test directories can use 0755 permissions
 	if err := os.Mkdir(subdir, 0755); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(subdir, "nested.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -778,16 +834,19 @@ func TestFindFilesWithHiddenDirs(t *testing.T) {
 
 	// Create hidden directory (not .terraform*)
 	hiddenDir := filepath.Join(dir, ".hidden")
+	//nolint:gosec // G301: Test directories can use 0755 permissions
 	if err := os.Mkdir(hiddenDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Add file in hidden directory
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(hiddenDir, "config.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create file in root
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -817,6 +876,7 @@ func TestFindFilesNonRecursiveWithReadDirError(t *testing.T) {
 	if err := os.Mkdir(noReadDir, 0000); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:gosec // G302: Test cleanup needs to restore permissions
 	defer func() { _ = os.Chmod(noReadDir, 0755) }() // Cleanup
 
 	// Try to find files in the no-read directory (non-recursive)
@@ -846,6 +906,7 @@ func TestFindFilesNonRecursiveReadDirErrorWithFile(t *testing.T) {
 
 	dir := t.TempDir()
 	file := filepath.Join(dir, "test.tf")
+	//nolint:gosec // G306: Test files can use 0644 permissions
 	if err := os.WriteFile(file, []byte(""), 0644); err != nil {
 		t.Fatal(err)
 	}

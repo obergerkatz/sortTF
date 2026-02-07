@@ -20,7 +20,7 @@ import (
 //   - Directories
 //   - .terraform.lock.hcl (Terraform lock file)
 //   - Files starting with .terraform
-func IsValidFile(path string, info os.FileInfo) bool {
+func IsValidFile(_ string, info os.FileInfo) bool {
 	if info == nil {
 		return false
 	}
@@ -40,7 +40,7 @@ func IsValidFile(path string, info os.FileInfo) bool {
 // ShouldSkipDir checks if a directory should be skipped during traversal.
 // Returns true for directories starting with ".terra" (e.g., .terraform, .terragrunt-cache).
 // This prevents processing of Terraform/Terragrunt cache and state directories.
-func ShouldSkipDir(path string, info os.FileInfo) bool {
+func ShouldSkipDir(_ string, info os.FileInfo) bool {
 	if info == nil {
 		return false
 	}
