@@ -9,7 +9,7 @@ permissions:
   contents: read
   pull-requests: write
 env:
-  GO_VERSION: '1.23.0'
+  GO_VERSION: '1.23.10'
 jobs:
   # ===========================================================================
   # Update Go Dependencies

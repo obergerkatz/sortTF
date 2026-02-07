@@ -12,8 +12,12 @@ import (
 
 // TestMain builds the binary before running integration tests
 func TestMain(m *testing.M) {
+	// Get the repo root directory (parent of integration/)
+	repoRoot := filepath.Join("..", ".")
+
 	// Build the binary from cmd/sorttf
-	cmd := exec.Command("go", "build", "-o", "sorttf-test", "./cmd/sorttf")
+	cmd := exec.Command("go", "build", "-o", filepath.Join("integration", "sorttf-test"), "./cmd/sorttf")
+	cmd.Dir = repoRoot
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	cmd.Stdout = &stderr
@@ -25,7 +29,7 @@ func TestMain(m *testing.M) {
 	// Run tests
 	code := m.Run()
 
-	// Cleanup
+	// Cleanup - the binary is in the integration directory
 	os.Remove("sorttf-test")
 
 	os.Exit(code)
