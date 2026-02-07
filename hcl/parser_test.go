@@ -39,17 +39,17 @@ func TestParseHCLFile(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "empty file",
+			name:    "empty file",
 			content: "",
 			wantErr: false,
 		},
 		{
-			name: "only whitespace",
+			name:    "only whitespace",
 			content: "   \n\n\t  \n",
 			wantErr: false,
 		},
 		{
-			name: "comments only",
+			name:    "comments only",
 			content: "# This is a comment\n// Another comment\n/* Block comment */",
 			wantErr: false,
 		},
@@ -224,7 +224,7 @@ func TestValidateRequiredBlockLabels(t *testing.T) {
   ami = "ami-12345"
 }`,
 			wantErr: true,
-			errMsg: "must have exactly 2 labels",
+			errMsg:  "must have exactly 2 labels",
 		},
 		{
 			name: "invalid resource with 3 labels",
@@ -232,7 +232,7 @@ func TestValidateRequiredBlockLabels(t *testing.T) {
   ami = "ami-12345"
 }`,
 			wantErr: true,
-			errMsg: "must have exactly 2 labels",
+			errMsg:  "must have exactly 2 labels",
 		},
 		{
 			name: "invalid variable with no labels",
@@ -240,7 +240,7 @@ func TestValidateRequiredBlockLabels(t *testing.T) {
   type = string
 }`,
 			wantErr: true,
-			errMsg: "must have exactly 1 label",
+			errMsg:  "must have exactly 1 label",
 		},
 		{
 			name: "invalid locals with labels",
@@ -248,7 +248,7 @@ func TestValidateRequiredBlockLabels(t *testing.T) {
   name = "value"
 }`,
 			wantErr: true,
-			errMsg: "should not have labels",
+			errMsg:  "should not have labels",
 		},
 		{
 			name: "invalid backend at top level",
@@ -256,7 +256,7 @@ func TestValidateRequiredBlockLabels(t *testing.T) {
   bucket = "test"
 }`,
 			wantErr: true,
-			errMsg: "must be inside a terraform block",
+			errMsg:  "must be inside a terraform block",
 		},
 		{
 			name: "valid backend inside terraform",
@@ -275,7 +275,7 @@ func TestValidateRequiredBlockLabels(t *testing.T) {
   }
 }`,
 			wantErr: true,
-			errMsg: "must have exactly 1 label",
+			errMsg:  "must have exactly 1 label",
 		},
 		{
 			name: "invalid backend inside terraform with 2 labels",
@@ -285,7 +285,7 @@ func TestValidateRequiredBlockLabels(t *testing.T) {
   }
 }`,
 			wantErr: true,
-			errMsg: "must have exactly 1 label",
+			errMsg:  "must have exactly 1 label",
 		},
 	}
 

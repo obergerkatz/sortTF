@@ -26,9 +26,10 @@ const (
 	KindSorting
 )
 
-//nolint:revive // exported: HCLError is intentionally named to indicate HCL-specific errors
 // HCLError is the unified error type for HCL operations.
 // It wraps an underlying error with context about the operation, file path, and error category.
+//
+//nolint:revive // exported: HCLError is intentionally named to indicate HCL-specific errors
 type HCLError struct {
 	Op   string    // Operation that failed (e.g., "ParseHCLFile", "SortBlocks")
 	Path string    // File path (may be empty for in-memory operations)
@@ -57,10 +58,11 @@ func (e *HCLError) Unwrap() error {
 	return e.Err
 }
 
-//nolint:revive // exported: HCLParseError is intentionally named to indicate HCL-specific parse errors
 // HCLParseError represents a syntax error with diagnostics.
 // This is kept separate from HCLError because it has a fundamentally different shape
 // (holds hcl.Diagnostics instead of a simple error).
+//
+//nolint:revive // exported: HCLParseError is intentionally named to indicate HCL-specific parse errors
 type HCLParseError struct {
 	Path  string          // File path that failed to parse
 	Diags hcl.Diagnostics // Parser diagnostics with error details

@@ -11,21 +11,21 @@ import (
 	"testing"
 )
 
+// binaryPath stores the path to the built sorttf-test binary
+var binaryPath string
+
 // TestMain builds the binary before running integration tests
 func TestMain(m *testing.M) {
-	// Get current working directory
-	wd, err := os.Getwd()
+	// Find repo root by looking for go.mod
+	repoRoot, err := findRepoRoot()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to get working directory: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to find repo root: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Determine repo root (parent of integration directory)
-	repoRoot := filepath.Dir(wd)
-
 	// Build the binary from cmd/sorttf
 	// Output binary to the integration directory
-	binaryPath := filepath.Join(wd, "sorttf-test")
+	binaryPath = filepath.Join(repoRoot, "integration", "sorttf-test")
 	cmdPath := filepath.Join(repoRoot, "cmd", "sorttf")
 
 	//nolint:gosec // G204: This is a test helper using trusted build commands
@@ -47,11 +47,42 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+// findRepoRoot finds the repository root by looking for go.mod
+func findRepoRoot() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	// Start from current directory and walk up until we find go.mod
+	dir := wd
+	for {
+		// Check if go.mod exists in this directory
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
+
+		// Check if cmd/sorttf exists (alternative check)
+		if _, err := os.Stat(filepath.Join(dir, "cmd", "sorttf")); err == nil {
+			return dir, nil
+		}
+
+		// Move to parent directory
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached root without finding go.mod
+			return "", errors.New("could not find repository root (no go.mod found)")
+		}
+		dir = parent
+	}
+}
+
 // runSortTF executes the sorttf binary with the given arguments
 func runSortTF(t *testing.T, args ...string) (stdout, stderr string, exitCode int) {
 	t.Helper()
 
-	cmd := exec.Command("./sorttf-test", args...)
+	//nolint:gosec // G204: This is a test helper using args from test cases
+	cmd := exec.Command(binaryPath, args...)
 	var outBuf, errBuf bytes.Buffer
 	cmd.Stdout = &outBuf
 	cmd.Stderr = &errBuf
@@ -1274,7 +1305,7 @@ func TestIntegration_RealisticScenarios(t *testing.T) {
 		},
 		{
 			name:    "Terragrunt config",
-			fixture:  "terragrunt.hcl",
+			fixture: "terragrunt.hcl",
 			checks:  []string{"include", "terraform"},
 		},
 	}

@@ -1,4 +1,3 @@
-//nolint:revive // var-naming: errors is an appropriate name for an error handling package
 // Package errors provides unified error handling for sortTF.
 //
 // This package defines sentinel errors for common conditions and a single
@@ -6,6 +5,8 @@
 //
 // Error checking should use errors.Is and errors.As from the standard library
 // rather than string matching or type assertions.
+//
+//nolint:revive // var-naming: errors is an appropriate name for an error handling package
 package errors
 
 import (

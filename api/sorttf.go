@@ -1,4 +1,3 @@
-//nolint:revive // var-naming: api is an appropriate package name for an API layer
 // Package api provides a programmatic API for sorting Terraform and Terragrunt files.
 //
 // This package can be imported and used in other Go programs without needing
@@ -21,6 +20,8 @@
 //	        fmt.Printf("%s: %v\n", path, err)
 //	    }
 //	}
+//
+//nolint:revive // var-naming: api is an appropriate package name for an API layer
 package api
 
 import (

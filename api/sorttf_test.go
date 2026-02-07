@@ -564,7 +564,7 @@ func TestGetSortedContent_ComplexContent(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "empty file",
+			name:    "empty file",
 			content: ``,
 			wantErr: false,
 		},
