@@ -135,7 +135,11 @@ jobs:
           set -euo pipefail
 
           # Find the previous tag (latest tag excluding the current version)
-          PREV_TAG="$(git tag --sort=-version:refname | grep -v "^${VERSION}$" | head -n 1 || echo "")"
+          # Use process substitution to avoid SIGPIPE errors
+          PREV_TAG=""
+          if git tag --sort=-version:refname | grep -v "^${VERSION}$" > /tmp/tags.txt 2>/dev/null; then
+            PREV_TAG="$(head -n 1 /tmp/tags.txt || true)"
+          fi
 
           echo "Current version: $VERSION"
           echo "Previous tag: ${PREV_TAG:-none}"
@@ -146,8 +150,9 @@ jobs:
             CHANGELOG_LINK="https://github.com/obergerkatz/sortTF/releases/tag/${VERSION}"
           fi
 
+          # Generate changelog content
+          CHANGELOG_FILE="/tmp/changelog.md"
           {
-            echo "changelog<<EOF"
             echo "## 🚀 What's Changed"
             echo ""
 
@@ -155,11 +160,18 @@ jobs:
               echo "Initial release of sortTF - a tool for sorting and formatting Terraform files."
               echo ""
               echo "### ✨ Features"
-              git log --pretty=format:"- %s" --reverse | head -20
+              # Save git log output to file to avoid SIGPIPE
+              git log --pretty=format:"- %s" --reverse > /tmp/commits.txt || true
+              head -n 20 /tmp/commits.txt || true
             else
               echo "Changes since ${PREV_TAG}:"
               echo ""
-              git log --pretty=format:"- %s" "${PREV_TAG}..HEAD" | grep -v "^- Merge" || echo "- Bug fixes and improvements"
+              # Generate commit list, filter merges, handle empty result
+              if git log --pretty=format:"- %s" "${PREV_TAG}..HEAD" > /tmp/commits.txt 2>/dev/null; then
+                grep -v "^- Merge" /tmp/commits.txt || echo "- Bug fixes and improvements"
+              else
+                echo "- Bug fixes and improvements"
+              fi
             fi
 
             echo ""
@@ -219,8 +231,17 @@ jobs:
             echo "---"
             echo ""
             echo "_Built with Go ${{ env.GO_VERSION }} • [Full Changelog](${CHANGELOG_LINK})_"
+          } > "$CHANGELOG_FILE"
+
+          # Write changelog to GitHub output using heredoc
+          {
+            echo "changelog<<EOF"
+            cat "$CHANGELOG_FILE"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
+
+          # Cleanup temp files
+          rm -f /tmp/tags.txt /tmp/commits.txt /tmp/changelog.md
       - name: Create GitHub Release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
         with:
