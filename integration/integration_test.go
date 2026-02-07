@@ -13,10 +13,13 @@ import (
 // TestMain builds the binary before running integration tests
 func TestMain(m *testing.M) {
 	// Build the binary from cmd/sorttf
-	cmd := exec.Command("go", "build", "-o", "sorttf-test", "../cmd/sorttf")
-	cmd.Dir = "."
+	cmd := exec.Command("go", "build", "-o", "sorttf-test", "./cmd/sorttf")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	cmd.Stdout = &stderr
 	if err := cmd.Run(); err != nil {
-		panic("failed to build binary: " + err.Error())
+		fmt.Fprintf(os.Stderr, "Build failed: %v\nOutput:\n%s\n", err, stderr.String())
+		os.Exit(1)
 	}
 
 	// Run tests
