@@ -616,10 +616,10 @@ func TestSortBlockAttributes_EmptyBlock(t *testing.T) {
 // TestSortHCLFile_Fixtures tests sorting with fixture files
 func TestSortHCLFile_Fixtures(t *testing.T) {
 	fixtureTests := []struct {
-		name     string
-		path     string
-		wantErr  bool
-		checkFn  func(t *testing.T, output string)
+		name    string
+		path    string
+		wantErr bool
+		checkFn func(t *testing.T, output string)
 	}{
 		{
 			name:    "all block types",
