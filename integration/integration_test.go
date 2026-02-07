@@ -62,16 +62,11 @@ func findRepoRoot() (string, error) {
 			return dir, nil
 		}
 
-		// Check if cmd/sorttf exists (alternative check)
-		if _, err := os.Stat(filepath.Join(dir, "cmd", "sorttf")); err == nil {
-			return dir, nil
-		}
-
 		// Move to parent directory
 		parent := filepath.Dir(dir)
 		if parent == dir {
 			// Reached root without finding go.mod
-			return "", errors.New("could not find repository root (no go.mod found)")
+			return "", fmt.Errorf("could not find repository root (no go.mod found), started from: %s", wd)
 		}
 		dir = parent
 	}
@@ -1987,7 +1982,7 @@ variable "region" {
 }`
 
 		// Create 50 files
-		for i := 0; i < 50; i++ {
+		for i := range 50 {
 			file := filepath.Join(tmpDir, fmt.Sprintf("file%03d.tf", i))
 			//nolint:gosec // G306: Test files can use 0644
 			_ = os.WriteFile(file, []byte(content), 0644)
@@ -2013,11 +2008,11 @@ variable "region" {
 }`
 
 		// Create 100 files across multiple directories
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			subdir := filepath.Join(tmpDir, fmt.Sprintf("dir%02d", i))
 			_ = os.Mkdir(subdir, 0755) //nolint:gosec // G301: Test use 0755
 
-			for j := 0; j < 10; j++ {
+			for j := range 10 {
 				file := filepath.Join(subdir, fmt.Sprintf("file%02d.tf", j))
 				//nolint:gosec // G306: Test files can use 0644
 				_ = os.WriteFile(file, []byte(content), 0644)

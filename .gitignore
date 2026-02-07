@@ -7,7 +7,7 @@
 # ============================================================================
 
 # Compiled binaries (main executable)
-sorttf
+/sorttf
 sorttf-*
 /cmd/sorttf/sorttf
 

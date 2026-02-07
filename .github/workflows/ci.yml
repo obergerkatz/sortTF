@@ -199,9 +199,6 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
         run: |
-          pwd
-          ls -la
-          ls -la cmd/
           go build -v -trimpath -ldflags="-s -w -X main.version=${{ github.sha }}" -o ${{ matrix.artifact_name }} ./cmd/sorttf
       - name: Upload artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
