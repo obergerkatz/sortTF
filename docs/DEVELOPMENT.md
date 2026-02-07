@@ -18,7 +18,7 @@ Comprehensive guide for developing sortTF, including project structure, build in
 
 sortTF follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout):
 
-```
+```text
 sortTF/
 ├── cmd/
 │   └── sorttf/              # CLI application entry point
@@ -103,11 +103,13 @@ sortTF/
 ### Required
 
 - **Go 1.22+** (1.23+ recommended)
+
   ```bash
   go version
   ```
 
 - **Git**
+
   ```bash
   git --version
   ```
@@ -115,21 +117,25 @@ sortTF/
 ### Recommended Development Tools
 
 - **golangci-lint** - Comprehensive linter
+
   ```bash
   go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
   ```
 
 - **gopls** - Go language server (for IDE integration)
+
   ```bash
   go install golang.org/x/tools/gopls@latest
   ```
 
 - **dlv** - Delve debugger
+
   ```bash
   go install github.com/go-delve/delve/cmd/dlv@latest
   ```
 
 - **Make** (optional) - Build automation
+
   ```bash
   # macOS
   xcode-select --install
@@ -168,6 +174,7 @@ go build \
 ```
 
 **Build flags explained:**
+
 - `-trimpath`: Remove absolute paths for reproducible builds
 - `-ldflags="-s -w"`: Strip debug info and symbol table (smaller binary)
 - `-X`: Inject version information at build time
@@ -380,6 +387,7 @@ dlv debug ./cmd/sorttf
 ### VS Code Debugging
 
 `.vscode/launch.json`:
+
 ```json
 {
   "version": "0.2.0",
@@ -598,6 +606,7 @@ docker run -v $(pwd):/workspace golang:1.23 bash -c "cd /workspace && go test ./
 #### "command not found: sorttf"
 
 **Solution:**
+
 ```bash
 # Ensure $GOPATH/bin is in PATH
 export PATH=$PATH:$(go env GOPATH)/bin
@@ -606,6 +615,7 @@ export PATH=$PATH:$(go env GOPATH)/bin
 #### Tests fail with "permission denied"
 
 **Solution:**
+
 ```bash
 chmod +x ./sorttf-test
 ```
@@ -613,6 +623,7 @@ chmod +x ./sorttf-test
 #### "cannot find package"
 
 **Solution:**
+
 ```bash
 go mod download
 go mod tidy
@@ -621,6 +632,7 @@ go mod tidy
 #### Race detector reports issues
 
 **Solution:**
+
 ```bash
 # Fix race conditions, then verify
 go test -race ./...

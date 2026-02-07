@@ -46,7 +46,8 @@ sorttf main.tf
 ```
 
 **Output:**
-```
+
+```bash
 ✓ Sorted: main.tf
 ```
 
@@ -81,7 +82,8 @@ sorttf --recursive .
 ```
 
 **Example output:**
-```
+
+```bash
 ✓ Sorted: ./main.tf
 ✓ Sorted: ./modules/vpc/main.tf
 ✓ Sorted: ./modules/vpc/variables.tf
@@ -98,6 +100,7 @@ sorttf --dry-run main.tf
 ```
 
 **Output shows a unified diff:**
+
 ```diff
 --- main.tf (original)
 +++ main.tf (sorted)
@@ -128,10 +131,12 @@ sorttf --validate .
 ```
 
 **Exit codes:**
+
 - `0`: All files are properly sorted
 - `1`: One or more files need sorting
 
 **Example usage in CI:**
+
 ```bash
 if ! sorttf --validate --recursive .; then
   echo "❌ Some files need sorting. Run: sorttf --recursive ."
@@ -148,7 +153,8 @@ sorttf --verbose --recursive .
 ```
 
 **Output:**
-```
+
+```text
 [INFO] Processing directory: .
 [INFO] Found 15 Terraform files
 [INFO] Processing: main.tf
@@ -199,6 +205,7 @@ fi
 ### CI/CD Pipeline
 
 **GitHub Actions:**
+
 ```yaml
 - name: Validate Terraform formatting
   run: |
@@ -206,6 +213,7 @@ fi
 ```
 
 **GitLab CI:**
+
 ```yaml
 terraform-format:
   script:
@@ -213,6 +221,7 @@ terraform-format:
 ```
 
 **Jenkins:**
+
 ```groovy
 stage('Validate Terraform') {
   steps {
@@ -243,15 +252,16 @@ fi
 .PHONY: fmt fmt-check
 
 fmt:
-	@echo "Formatting Terraform files..."
-	@sorttf --recursive .
+ @echo "Formatting Terraform files..."
+ @sorttf --recursive .
 
 fmt-check:
-	@echo "Checking Terraform file formatting..."
-	@sorttf --validate --recursive .
+ @echo "Checking Terraform file formatting..."
+ @sorttf --validate --recursive .
 ```
 
 Usage:
+
 ```bash
 make fmt        # Sort all files
 make fmt-check  # Validate in CI
@@ -262,6 +272,7 @@ make fmt-check  # Validate in CI
 #### VS Code Task
 
 `.vscode/tasks.json`:
+
 ```json
 {
   "version": "2.0.0",
@@ -284,6 +295,7 @@ make fmt-check  # Validate in CI
 #### JetBrains IDEs (IntelliJ, GoLand)
 
 External Tools configuration:
+
 - **Program**: `sorttf`
 - **Arguments**: `--recursive $ProjectFileDir$`
 - **Working directory**: `$ProjectFileDir$`
@@ -377,12 +389,14 @@ Within each type, blocks are sorted alphabetically by their labels.
 ### Attribute Ordering
 
 Within blocks:
+
 1. `for_each` is always first (if present)
 2. `count` is second (if present, after `for_each`)
 3. Other attributes are sorted alphabetically
 4. Nested blocks come after attributes
 
 **Example:**
+
 ```hcl
 resource "aws_instance" "web" {
   for_each = var.instances  # Always first
@@ -422,6 +436,7 @@ Each file is processed independently.
 ### Ignored Files
 
 sortTF skips:
+
 - Non-Terraform files (only processes `.tf` and `.hcl`)
 - Files in `.terraform/` directories
 - Files in `.terragrunt-cache/` directories
@@ -432,6 +447,7 @@ sortTF skips:
 ### 1. Always Preview First
 
 Use `--dry-run` on unfamiliar code:
+
 ```bash
 sorttf --dry-run --recursive .
 ```
@@ -439,6 +455,7 @@ sorttf --dry-run --recursive .
 ### 2. Use Validate in CI
 
 Catch unsorted files early:
+
 ```yaml
 - name: Check Terraform formatting
   run: sorttf --validate --recursive .
@@ -447,6 +464,7 @@ Catch unsorted files early:
 ### 3. Sort Before Committing
 
 Add to your workflow:
+
 ```bash
 sorttf --recursive . && git add -A
 ```
@@ -454,6 +472,7 @@ sorttf --recursive . && git add -A
 ### 4. Combine with terraform fmt
 
 sortTF complements `terraform fmt`:
+
 ```bash
 terraform fmt -recursive .  # Format HCL
 sorttf --recursive .        # Sort blocks and attributes
@@ -462,6 +481,7 @@ sorttf --recursive .        # Sort blocks and attributes
 ### 5. Use in Monorepos
 
 Process multiple projects:
+
 ```bash
 for dir in terraform/*/; do sorttf --recursive "$dir"; done
 ```
@@ -469,6 +489,7 @@ for dir in terraform/*/; do sorttf --recursive "$dir"; done
 ### 6. Check Exit Codes
 
 Handle errors properly:
+
 ```bash
 if ! sorttf --validate .; then
   echo "Files need sorting"
@@ -479,6 +500,7 @@ fi
 ### 7. Verbose for Debugging
 
 Use verbose mode to debug issues:
+
 ```bash
 sorttf --verbose --dry-run main.tf
 ```
@@ -486,6 +508,7 @@ sorttf --verbose --dry-run main.tf
 ### 8. Recursive by Default in CI
 
 Always use recursive in CI:
+
 ```bash
 sorttf --validate --recursive .
 ```
@@ -493,6 +516,7 @@ sorttf --validate --recursive .
 ### 9. Ignore Generated Files
 
 Don't run on generated files:
+
 ```bash
 # Skip .terraform directory (automatically skipped)
 sorttf --recursive .
@@ -501,6 +525,7 @@ sorttf --recursive .
 ### 10. Document in README
 
 Tell your team about sortTF:
+
 ```markdown
 ## Code Formatting
 
@@ -514,6 +539,7 @@ sorttf --recursive .
 ### Files Not Being Sorted
 
 **Check file extension:**
+
 ```bash
 # Only .tf and .hcl files are processed
 ls -la *.tf *.hcl
@@ -522,6 +548,7 @@ ls -la *.tf *.hcl
 ### "Already sorted" but looks wrong
 
 sortTF may already be seeing the file as correct. Use `--dry-run` to see what would change:
+
 ```bash
 sorttf --dry-run main.tf
 ```
@@ -529,6 +556,7 @@ sorttf --dry-run main.tf
 ### Parse Errors
 
 If sortTF reports parse errors:
+
 1. Check for syntax errors with `terraform validate`
 2. Run `terraform fmt` first
 3. Report the issue on GitHub if it's valid HCL
@@ -536,6 +564,7 @@ If sortTF reports parse errors:
 ### Performance
 
 For very large repositories, consider:
+
 - Processing specific directories instead of entire repo
 - Using CI parallelization
 - Excluding unnecessary directories

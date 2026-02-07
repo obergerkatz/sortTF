@@ -11,7 +11,6 @@ Thank you for your interest in contributing to sortTF! This document provides gu
 - [Coding Standards](#coding-standards)
 - [Testing Guidelines](#testing-guidelines)
 - [Submitting Changes](#submitting-changes)
-- [Release Process](#release-process)
 
 ## Code of Conduct
 
@@ -27,11 +26,13 @@ This project follows the standard open-source code of conduct:
 ### Reporting Bugs
 
 Before creating a bug report:
+
 1. Check the [existing issues](https://github.com/obergerkatz/sortTF/issues) to avoid duplicates
 2. Ensure you're using the latest version
 3. Verify the issue is reproducible
 
 When creating a bug report, include:
+
 - **Clear title**: Summarize the issue
 - **Steps to reproduce**: Exact steps to reproduce the behavior
 - **Expected behavior**: What you expected to happen
@@ -40,15 +41,17 @@ When creating a bug report, include:
 - **Sample files**: Minimal Terraform files that demonstrate the issue
 
 **Example:**
-```markdown
+
 ### Bug: Nested blocks not sorted correctly
 
 **Environment:**
+
 - sortTF version: v1.0.0
 - OS: macOS 14.0
 - Go version: 1.23.0
 
 **Steps to Reproduce:**
+
 1. Create a file with nested lifecycle blocks
 2. Run `sorttf file.tf`
 3. Observe incorrect ordering
@@ -58,12 +61,12 @@ When creating a bug report, include:
 **Actual:** Nested blocks remain in original order
 
 **Sample File:**
+
 ```hcl
 resource "aws_instance" "web" {
   lifecycle { ... }
   ami = "ami-123"
 }
-```
 ```
 
 ### Suggesting Enhancements
@@ -163,6 +166,7 @@ git checkout -b docs/improve-installation-guide
 ```
 
 **Branch naming conventions:**
+
 - `feature/` - New features
 - `fix/` - Bug fixes
 - `docs/` - Documentation updates
@@ -226,7 +230,8 @@ git commit -m "test: add integration tests for terragrunt files"
 ```
 
 **Commit message format:**
-```
+
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -235,6 +240,7 @@ git commit -m "test: add integration tests for terragrunt files"
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -244,7 +250,8 @@ git commit -m "test: add integration tests for terragrunt files"
 - `chore`: Maintenance tasks
 
 **Example:**
-```
+
+```text
 feat(hcl): add support for import blocks
 
 Add sorting support for Terraform 1.5+ import blocks.
@@ -408,6 +415,7 @@ func TestSortFile(t *testing.T) {
 ### Test Coverage
 
 Aim for high test coverage:
+
 - **Target**: 90%+ coverage
 - **Current**: 95% (let's maintain it!)
 - Check coverage: `go test -cover ./...`
@@ -415,6 +423,7 @@ Aim for high test coverage:
 ### Types of Tests
 
 #### Unit Tests
+
 Test individual functions in isolation:
 
 ```go
@@ -425,6 +434,7 @@ func TestSortBlocks(t *testing.T) {
 ```
 
 #### Integration Tests
+
 Test the full binary end-to-end:
 
 ```go
@@ -435,6 +445,7 @@ func TestCLI_SortsSingleFile(t *testing.T) {
 ```
 
 #### Table-Driven Tests
+
 Use for testing multiple scenarios:
 
 ```go
@@ -460,7 +471,7 @@ func TestBlockOrder(t *testing.T) {
 
 Place test files in `testdata/`:
 
-```
+```text
 testdata/
 ├── valid/
 │   ├── simple.tf
@@ -506,6 +517,7 @@ go test -short ./...
 ### Pull Request Process
 
 1. **Update your branch** with latest upstream:
+
    ```bash
    git fetch upstream
    git rebase upstream/main
@@ -524,6 +536,7 @@ go test -short ./...
    - Note any breaking changes
 
 **PR Template:**
+
 ```markdown
 ## Description
 Brief description of the changes

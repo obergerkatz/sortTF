@@ -52,16 +52,19 @@ func SortFile(path string, opts Options) error
 Sorts and formats a single Terraform or Terragrunt file.
 
 **Parameters:**
+
 - `path`: Path to the `.tf` or `.hcl` file
 - `opts`: Sorting options (see [Options](#options))
 
 **Returns:**
+
 - `nil`: File was successfully sorted and written
 - `ErrNoChanges`: File is already sorted (not considered an error)
 - `ErrNeedsSorting`: File needs sorting (only in Validate mode)
 - `error`: Parsing, validation, or I/O error
 
 **Example:**
+
 ```go
 err := api.SortFile("main.tf", api.Options{})
 if err != nil {
@@ -82,14 +85,17 @@ func GetSortedContent(path string) (content string, changed bool, err error)
 Reads a file and returns its sorted content without modifying the file. Useful for previewing changes or computing diffs.
 
 **Parameters:**
+
 - `path`: Path to the file
 
 **Returns:**
+
 - `content`: The sorted file content
 - `changed`: Whether the content would be different from the original
 - `err`: Any error that occurred
 
 **Example:**
+
 ```go
 content, changed, err := api.GetSortedContent("main.tf")
 if err != nil {
@@ -110,13 +116,16 @@ func SortFiles(paths []string, opts Options) map[string]error
 Sorts multiple files and returns results for each. Continues processing even if individual files fail.
 
 **Parameters:**
+
 - `paths`: Slice of file paths to sort
 - `opts`: Sorting options
 
 **Returns:**
+
 - Map of file path to error (or nil if successful)
 
 **Example:**
+
 ```go
 files := []string{"main.tf", "variables.tf", "outputs.tf"}
 results := api.SortFiles(files, api.Options{})
@@ -139,15 +148,18 @@ func SortDirectory(dir string, recursive bool, opts Options) (map[string]error, 
 Sorts all Terraform/Terragrunt files in a directory.
 
 **Parameters:**
+
 - `dir`: Directory path
 - `recursive`: Whether to process subdirectories
 - `opts`: Sorting options
 
 **Returns:**
+
 - Map of file path to error for each file processed
 - Error if directory traversal fails
 
 **Example:**
+
 ```go
 results, err := api.SortDirectory("./terraform", true, api.Options{})
 if err != nil {
@@ -176,10 +188,12 @@ type Options struct {
 Configuration options for sorting operations.
 
 **Fields:**
+
 - `DryRun`: If true, files are not modified. Useful for previewing changes.
 - `Validate`: If true, returns `ErrNeedsSorting` if file needs sorting instead of modifying it. Useful for CI/CD validation.
 
 **Examples:**
+
 ```go
 // Normal sorting
 api.SortFile("main.tf", api.Options{})
@@ -205,6 +219,7 @@ var ErrNoChanges = errors.New("file is already sorted")
 Returned when a file is already properly sorted. This is not considered an error condition - you should check for it with `errors.Is()` and typically ignore it.
 
 **Example:**
+
 ```go
 err := api.SortFile("main.tf", api.Options{})
 if errors.Is(err, api.ErrNoChanges) {
@@ -222,6 +237,7 @@ var ErrNeedsSorting = errors.New("file needs sorting")
 Returned in Validate mode when a file needs sorting. Used for CI/CD validation.
 
 **Example:**
+
 ```go
 err := api.SortFile("main.tf", api.Options{Validate: true})
 if errors.Is(err, api.ErrNeedsSorting) {

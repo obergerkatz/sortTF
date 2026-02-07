@@ -93,6 +93,7 @@ sudo mv sorttf-darwin-arm64 /usr/local/bin/sorttf
 3. Move to a directory in your PATH (e.g., `C:\Windows\System32` or add a custom directory to PATH)
 
 **PowerShell:**
+
 ```powershell
 # Download (replace v1.0.0 with desired version)
 Invoke-WebRequest -Uri "https://github.com/obergerkatz/sortTF/releases/download/v1.0.0/sorttf-windows-amd64.exe" -OutFile "sorttf.exe"
@@ -195,6 +196,7 @@ services:
 ```
 
 Run:
+
 ```bash
 docker-compose run sorttf
 ```
@@ -210,11 +212,13 @@ wget https://github.com/obergerkatz/sortTF/releases/download/v1.0.0/checksums.tx
 ```
 
 Verify (Linux/macOS):
+
 ```bash
 sha256sum -c checksums.txt
 ```
 
 Verify (macOS alternative):
+
 ```bash
 shasum -a 256 -c checksums.txt
 ```
@@ -300,6 +304,7 @@ chmod +x sorttf
 Go to System Preferences > Security & Privacy > General and click "Allow" when you see the warning about sortTF.
 
 Alternatively, remove the quarantine attribute:
+
 ```bash
 xattr -d com.apple.quarantine sorttf
 ```

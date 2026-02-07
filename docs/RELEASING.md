@@ -29,7 +29,7 @@ sortTF uses an automated release process triggered by Git tags. The release work
 
 sortTF follows [Semantic Versioning (SemVer)](https://semver.org/) 2.0.0:
 
-```
+```text
 v<MAJOR>.<MINOR>.<PATCH>[-<PRERELEASE>]
 
 Examples:
@@ -62,6 +62,7 @@ Examples:
 ### Examples of Version Increments
 
 **Bug Fix** (Patch):
+
 ```bash
 # Current: v1.2.3
 # Fix: Nested blocks not sorted correctly
@@ -69,6 +70,7 @@ Examples:
 ```
 
 **New Feature** (Minor):
+
 ```bash
 # Current: v1.2.4
 # Feature: Add support for `moved` blocks
@@ -76,6 +78,7 @@ Examples:
 ```
 
 **Breaking Change** (Major):
+
 ```bash
 # Current: v1.3.0
 # Breaking: Change API function signatures
@@ -83,6 +86,7 @@ Examples:
 ```
 
 **Pre-release**:
+
 ```bash
 # Testing v2.0.0 features
 v2.0.0-alpha.1  # Initial testing
@@ -98,7 +102,7 @@ sortTF uses a **tag-based release workflow** with automated GitHub Actions.
 
 ### Workflow Diagram
 
-```
+```text
 Developer                Git                GitHub Actions
     │                     │                       │
     │  Create & Push Tag  │                       │
@@ -336,6 +340,7 @@ git push origin v1.0.0
 ```
 
 **Characteristics:**
+
 - Fully tested
 - Production-ready
 - Marked as "Latest" on GitHub
@@ -358,6 +363,7 @@ git push origin v2.0.0-rc.1
 ```
 
 **Characteristics:**
+
 - Marked as "Pre-release" on GitHub
 - Not recommended for production
 - Used for testing before stable release
@@ -375,6 +381,7 @@ git push origin main v1.0.1
 ```
 
 **When to use:**
+
 - Critical bugs in production
 - Security vulnerabilities
 - Data loss or corruption issues
@@ -390,6 +397,7 @@ Via GitHub Actions UI:
 5. Click "Run workflow"
 
 **Use cases:**
+
 - Testing release process
 - Creating draft releases for review
 - Emergency releases when tag push fails
@@ -399,6 +407,7 @@ Via GitHub Actions UI:
 ### Issue: Release workflow failed
 
 **Check:**
+
 1. View workflow logs in GitHub Actions
 2. Common causes:
    - Tests failed → Fix tests, re-tag
@@ -406,6 +415,7 @@ Via GitHub Actions UI:
    - Invalid version format → Use correct format (v1.2.3)
 
 **Solution:**
+
 ```bash
 # Delete failed tag
 git tag -d v1.0.0
@@ -419,11 +429,13 @@ git push origin v1.0.0
 ### Issue: Tag already exists
 
 **Check:**
+
 ```bash
 git tag -l v1.0.0
 ```
 
 **Solution:**
+
 ```bash
 # Delete local tag
 git tag -d v1.0.0
@@ -439,6 +451,7 @@ git push origin v1.0.0
 ### Issue: Wrong version tagged
 
 **Solution:**
+
 ```bash
 # Delete incorrect tag
 git tag -d v1.0.0
@@ -452,22 +465,26 @@ git push origin v1.0.1
 ### Issue: Release created but binaries missing
 
 **Check:**
+
 1. GitHub Actions workflow logs
 2. Build step output
 3. Asset upload step
 
 **Solution:**
+
 - Re-run the workflow from GitHub Actions UI
 - Or delete release and tag, then re-create
 
 ### Issue: Tests pass locally but fail in CI
 
 **Common causes:**
+
 - Race conditions (use `go test -race`)
 - Platform-specific issues
 - Missing dependencies in CI
 
 **Solution:**
+
 1. Reproduce locally: `act -j test` (using nektos/act)
 2. Fix issues
 3. Push fixes and re-tag
@@ -573,6 +590,7 @@ The release process is highly automated. The only manual steps are:
 3. **Push tag** (`git push origin vX.Y.Z`)
 
 Everything else is handled by GitHub Actions:
+
 - Testing
 - Building
 - Checksums

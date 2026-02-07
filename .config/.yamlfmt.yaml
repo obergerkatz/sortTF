@@ -1,0 +1,11 @@
+---
+formatter:
+  include_document_start: true
+  scan_folded_as_literal: true
+  max_line_length: 300
+  retain_line_breaks: false
+  retain_line_breaks_single: false
+  trailing_newline: true
+  type: basic
+  indent: 2
+  line_ending: lf

@@ -32,6 +32,7 @@ sortTF is a command-line tool and Go library designed to sort and format Terrafo
 ### 1. Separation of Concerns
 
 Each package has a single, well-defined responsibility:
+
 - `cmd/sorttf`: CLI entry point only
 - `cli`: CLI logic and execution
 - `api`: Public library interface
@@ -41,6 +42,7 @@ Each package has a single, well-defined responsibility:
 ### 2. API-First Design
 
 The library API (`api` package) is the primary interface. The CLI is built on top of it, ensuring:
+
 - Users can integrate sortTF into their own tools
 - CLI and library share the same code path
 - Testing focuses on the API, which tests both CLI and library
@@ -48,6 +50,7 @@ The library API (`api` package) is the primary interface. The CLI is built on to
 ### 3. Immutability Where Possible
 
 Operations return new data structures rather than modifying in place:
+
 ```go
 // Blocks are sorted into a new slice
 func sortBlocks(blocks []Block) []Block {
@@ -61,6 +64,7 @@ func sortBlocks(blocks []Block) []Block {
 ### 4. Fail Fast
 
 Invalid inputs are caught early:
+
 ```go
 func SortFile(path string, opts Options) error {
     if path == "" {
@@ -73,13 +77,14 @@ func SortFile(path string, opts Options) error {
 ### 5. Explicit Over Implicit
 
 Behavior is explicit, not magical:
+
 - Options struct for configuration
 - Named return values for clarity
 - Sentinel errors for expected conditions
 
 ## Architecture Diagram
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                         User Input                          │
 │                    (CLI Args or API Call)                   │
@@ -145,16 +150,19 @@ Behavior is explicit, not magical:
 ### 1. CLI Layer (`cmd/sorttf`, `cli`)
 
 **Responsibilities:**
+
 - Parse command-line arguments
 - Validate flags
 - Call appropriate API functions
 - Format and display results
 
 **Key Files:**
+
 - `cmd/sorttf/main.go`: Entry point
 - `cli/cli.go`: CLI logic
 
 **Design:**
+
 ```go
 // main.go - Minimal entry point
 func main() {
@@ -174,11 +182,13 @@ func RunCLI(args []string) int {
 ### 2. Public API Layer (`api`)
 
 **Responsibilities:**
+
 - Public interface for sorting operations
 - High-level functions for common use cases
 - Error handling and sentinel errors
 
 **Key Functions:**
+
 ```go
 func SortFile(path string, opts Options) error
 func GetSortedContent(path string) (string, bool, error)
@@ -187,6 +197,7 @@ func SortDirectory(dir string, recursive bool, opts Options) (map[string]error, 
 ```
 
 **Design Patterns:**
+
 - Options struct for configuration
 - Sentinel errors (`ErrNoChanges`, `ErrNeedsSorting`)
 - Map return for batch operations
@@ -195,11 +206,13 @@ func SortDirectory(dir string, recursive bool, opts Options) (map[string]error, 
 ### 3. Configuration Layer (`config`)
 
 **Responsibilities:**
+
 - Define configuration structures
 - Validate options
 - Provide defaults
 
 **Key Types:**
+
 ```go
 type Options struct {
     DryRun   bool  // Preview mode
@@ -210,6 +223,7 @@ type Options struct {
 ### 4. HCL Processing Layer (`hcl`)
 
 **Responsibilities:**
+
 - Parse HCL files using hashicorp/hcl
 - Sort blocks according to Terraform best practices
 - Sort attributes within blocks
@@ -218,6 +232,7 @@ type Options struct {
 **Key Components:**
 
 #### Parser (`hcl/parser.go`)
+
 ```go
 func Parse(content []byte) (*File, error) {
     // Parse using hclwrite
@@ -227,6 +242,7 @@ func Parse(content []byte) (*File, error) {
 ```
 
 #### Sorter (`hcl/sorter.go`)
+
 ```go
 func SortBlocks(file *File) {
     // Sort top-level blocks
@@ -236,6 +252,7 @@ func SortBlocks(file *File) {
 ```
 
 #### Formatter (`hcl/formatter.go`)
+
 ```go
 func Format(file *File) ([]byte, error) {
     // Apply terraform fmt standards
@@ -245,6 +262,7 @@ func Format(file *File) ([]byte, error) {
 ```
 
 **Block Order:**
+
 ```go
 var blockOrder = map[string]int{
     "terraform": 0,
@@ -263,6 +281,7 @@ var blockOrder = map[string]int{
 #### File Operations (`internal/files`)
 
 **Walker:**
+
 ```go
 func Walk(root string, recursive bool) ([]string, error) {
     // Traverse directory tree
@@ -272,6 +291,7 @@ func Walk(root string, recursive bool) ([]string, error) {
 ```
 
 **Filter:**
+
 ```go
 func ShouldProcess(path string) bool {
     // Skip .terraform/
@@ -283,6 +303,7 @@ func ShouldProcess(path string) bool {
 #### Error Handling (`internal/errors`)
 
 **Custom Error Types:**
+
 ```go
 type ParseError struct {
     Path string
@@ -300,7 +321,7 @@ type ValidationError struct {
 
 ### Single File Processing
 
-```
+```text
 User Input (path)
     │
     ▼
@@ -338,7 +359,7 @@ Compare with original
 
 ### Directory Processing
 
-```
+```text
 User Input (directory path)
     │
     ▼
@@ -364,7 +385,8 @@ Aggregate results → map[path]error
 
 ### Block Sorting
 
-**Step 1: Categorize by Type**
+#### 1: Categorize by Type**
+
 ```go
 func getBlockOrder(blockType string) int {
     if order, ok := blockOrder[blockType]; ok {
@@ -374,14 +396,16 @@ func getBlockOrder(blockType string) int {
 }
 ```
 
-**Step 2: Sort by Type**
+#### 2: Sort by Type**
+
 ```go
 sort.SliceStable(blocks, func(i, j int) bool {
     return getBlockOrder(blocks[i].Type) < getBlockOrder(blocks[j].Type)
 })
 ```
 
-**Step 3: Sort Within Type by Labels**
+#### 3: Sort Within Type by Labels**
+
 ```go
 // Within same type, sort alphabetically by labels
 if blocks[i].Type == blocks[j].Type {
@@ -391,23 +415,27 @@ if blocks[i].Type == blocks[j].Type {
 
 ### Attribute Sorting
 
-**Step 1: Separate Special Attributes**
+#### 1: Separate Special Attributes**
+
 ```go
 var special []string  // for_each, count
 var regular []string  // everything else
 ```
 
-**Step 2: Sort Regular Attributes**
+#### 2: Sort Regular Attributes**
+
 ```go
 sort.Strings(regular)
 ```
 
-**Step 3: Combine**
+#### 3: Combine**
+
 ```go
 result := append(special, regular...)
 ```
 
 **Example:**
+
 ```hcl
 resource "aws_instance" "web" {
   for_each = var.instances  # Always first
@@ -450,11 +478,13 @@ func SortFiles(paths []string, opts Options) map[string]error {
 ```
 
 **Benefits:**
+
 - Faster processing of multiple files
 - Scales with CPU cores
 - Safe with mutex-protected results map
 
 **Considerations:**
+
 - File I/O is the bottleneck, not CPU
 - Limit goroutines for very large directories
 - Each file processed independently
@@ -463,7 +493,7 @@ func SortFiles(paths []string, opts Options) map[string]error {
 
 ### Error Hierarchy
 
-```
+```text
 error (interface)
     │
     ├── Sentinel Errors
@@ -504,7 +534,7 @@ if errors.As(err, &parseErr) {
 
 ### Test Pyramid
 
-```
+```text
                    ╱╲
                   ╱  ╲
                  ╱ E2E ╲         29 Integration Tests
@@ -533,16 +563,19 @@ if errors.As(err, &parseErr) {
 ### Test Types
 
 **Unit Tests:**
+
 - Test individual functions in isolation
 - Fast, deterministic
 - Use table-driven tests
 
 **Integration Tests:**
+
 - Test full CLI binary end-to-end
 - Real file I/O
 - Multiple scenarios (flags, errors, etc.)
 
 **System Tests:**
+
 - Multi-file workflows
 - Error handling
 - Performance characteristics
@@ -577,12 +610,14 @@ BenchmarkSortFile/large-8           500  3200000 ns/op 1280000 B/op 14000 allocs
 **Decision**: Use official HashiCorp HCL library
 
 **Rationale:**
+
 - Battle-tested by Terraform itself
 - Correct handling of all HCL edge cases
 - Comment preservation
 - Active maintenance
 
 **Trade-offs:**
+
 - Adds dependency
 - Slightly slower than custom parser
 - Must follow library's API changes
@@ -592,6 +627,7 @@ BenchmarkSortFile/large-8           500  3200000 ns/op 1280000 B/op 14000 allocs
 **Decision**: Split cmd/sorttf and api packages
 
 **Rationale:**
+
 - Library users don't need CLI code
 - Clear API surface
 - Easier testing
@@ -602,11 +638,13 @@ BenchmarkSortFile/large-8           500  3200000 ns/op 1280000 B/op 14000 allocs
 **Decision**: Process files concurrently in `SortFiles`
 
 **Rationale:**
+
 - Significant speedup on multi-core systems
 - Simple implementation with goroutines
 - Safe with proper synchronization
 
 **Trade-offs:**
+
 - Added complexity
 - Potential for too many goroutines (mitigated by processing in batches)
 
@@ -615,11 +653,13 @@ BenchmarkSortFile/large-8           500  3200000 ns/op 1280000 B/op 14000 allocs
 **Decision**: Use `Options` struct instead of function parameters
 
 **Rationale:**
+
 - Extensible (add options without breaking API)
 - Self-documenting
 - Easy to provide defaults
 
 **Example:**
+
 ```go
 // Bad: Many parameters
 func SortFile(path string, dryRun bool, validate bool, verbose bool) error

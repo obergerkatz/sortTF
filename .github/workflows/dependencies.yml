@@ -1,18 +1,15 @@
+---
 name: Dependencies
-
 on:
   schedule:
     # Run weekly on Mondays at 9 AM UTC
     - cron: '0 9 * * 1'
   workflow_dispatch: # Allow manual triggering
-
 permissions:
   contents: read
   pull-requests: write
-
 env:
   GO_VERSION: '1.23.0'
-
 jobs:
   # ===========================================================================
   # Update Go Dependencies
@@ -20,25 +17,20 @@ jobs:
   update-dependencies:
     name: Update Go Dependencies
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
       - name: Set up Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
-
       - name: Update dependencies
         run: |
           go get -u ./...
           go mod tidy
-
       - name: Run tests
         run: go test ./...
-
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
@@ -54,54 +46,44 @@ jobs:
           branch: deps/update-go-dependencies
           delete-branch: true
           labels: dependencies
-
   # ===========================================================================
   # Check for Vulnerabilities
   # ===========================================================================
   vulnerability-scan:
     name: Vulnerability Scan
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
       - name: Set up Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
-
       - name: Run govulncheck
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
-
       - name: Run Nancy (Sonatype)
         run: |
           go install github.com/sonatype-nexus-community/nancy@latest
           go list -json -deps ./... | nancy sleuth
-
   # ===========================================================================
   # License Compliance Check
   # ===========================================================================
   license-check:
     name: License Compliance
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
       - name: Set up Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
-
       - name: Install go-licenses
         run: go install github.com/google/go-licenses@latest
-
       - name: Check licenses
         run: |
           go-licenses check ./... --allowed_licenses=MIT,Apache-2.0,BSD-3-Clause,BSD-2-Clause,ISC,MPL-2.0

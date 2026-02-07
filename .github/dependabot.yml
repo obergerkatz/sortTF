@@ -1,6 +1,6 @@
 # Dependabot configuration for automated dependency updates
 # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
+---
 version: 2
 updates:
   # ============================================================================
@@ -13,24 +13,19 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
-
     # Open pull requests for version updates
     open-pull-requests-limit: 5
-
     # Commit message configuration
     commit-message:
       prefix: "chore(deps)"
       prefix-development: "chore(deps-dev)"
       include: "scope"
-
     # Pull request labels
     labels:
       - "dependencies"
       - "go"
-
     # Automatically rebase PRs when they become out of date
     rebase-strategy: "auto"
-
     # Group updates
     groups:
       # Group all patch and minor updates together
@@ -40,14 +35,12 @@ updates:
         update-types:
           - "minor"
           - "patch"
-
       # Separate group for major updates (more caution needed)
       go-major-updates:
         patterns:
           - "*"
         update-types:
           - "major"
-
   # ============================================================================
   # GitHub Actions - Weekly Updates
   # ============================================================================
@@ -58,23 +51,18 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
-
     # Open pull requests for version updates
     open-pull-requests-limit: 5
-
     # Commit message configuration
     commit-message:
       prefix: "chore(ci)"
       include: "scope"
-
     # Pull request labels
     labels:
       - "dependencies"
       - "github-actions"
-
     # Automatically rebase PRs when they become out of date
     rebase-strategy: "auto"
-
     # Group all GitHub Actions updates together
     groups:
       github-actions:
@@ -83,7 +71,6 @@ updates:
         update-types:
           - "minor"
           - "patch"
-
       github-actions-major:
         patterns:
           - "*"

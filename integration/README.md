@@ -101,6 +101,7 @@ These integration tests are designed to run in CI/CD pipelines:
 ```
 
 The tests verify the actual behavior users will experience, making them ideal for:
+
 - Pre-release validation
 - Regression testing
 - Cross-platform compatibility testing
@@ -168,5 +169,6 @@ Integration tests provide coverage for:
 | Purpose | Code correctness | User experience |
 
 Both types of tests are valuable:
+
 - **Unit tests** catch bugs early during development
 - **Integration tests** verify the system works end-to-end for users

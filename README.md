@@ -64,6 +64,7 @@ Within blocks, attributes are sorted alphabetically with `for_each` always place
 ### Example
 
 **Before:**
+
 ```hcl
 resource "aws_instance" "web" {
   instance_type = "t3.micro"
@@ -74,6 +75,7 @@ variable "environment" { type = string }
 ```
 
 **After:**
+
 ```hcl
 provider "aws" { region = "us-west-2" }
 variable "environment" { type = string }
@@ -141,4 +143,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ for the Terraform community**
+Made with ❤️ for the Terraform community
