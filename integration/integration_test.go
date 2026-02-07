@@ -26,10 +26,10 @@ func TestMain(m *testing.M) {
 	// Build the binary from cmd/sorttf
 	// Output binary to the integration directory
 	binaryPath = filepath.Join(repoRoot, "integration", "sorttf-test")
-	cmdPath := filepath.Join(repoRoot, "cmd", "sorttf")
 
 	//nolint:gosec // G204: This is a test helper using trusted build commands
-	cmd := exec.Command("go", "build", "-o", binaryPath, cmdPath)
+	cmd := exec.Command("go", "build", "-o", binaryPath, "./cmd/sorttf")
+	cmd.Dir = repoRoot // Set working directory to repo root
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	cmd.Stdout = &stderr
