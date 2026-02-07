@@ -48,6 +48,23 @@ jobs:
             exit 1
           fi
   # ===========================================================================
+  # Pre-commit Hooks
+  # ===========================================================================
+  pre-commit:
+    name: Pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: '3.14'
+      - name: Install pre-commit
+        run: pip install pre-commit
+      - name: Run pre-commit
+        run: pre-commit run --all-files --show-diff-on-failure
+  # ===========================================================================
   # Security Scanning
   # ===========================================================================
   security:
@@ -276,12 +293,13 @@ jobs:
   all-checks:
     name: All Checks Passed
     if: always()
-    needs: [lint, security, test, integration, build, verify]
+    needs: [lint, pre-commit, security, test, integration, build, verify]
     runs-on: ubuntu-latest
     steps:
       - name: Check all jobs status
         run: |
           if [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.pre-commit.result }}" != "success" ] || \
              [ "${{ needs.security.result }}" != "success" ] || \
              [ "${{ needs.test.result }}" != "success" ] || \
              [ "${{ needs.integration.result }}" != "success" ] || \
