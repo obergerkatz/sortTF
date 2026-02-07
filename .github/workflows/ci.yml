@@ -113,10 +113,13 @@ jobs:
         shell: bash
         run: |
           # Run tests excluding integration package
+          # shellcheck disable=SC2046
           go test -race -covermode=atomic -coverprofile=coverage.out -v $(go list ./... | grep -v '/integration$')
       - name: Run tests with race detector
         if: matrix.os == 'ubuntu-latest'
-        run: go test -race -short $(go list ./... | grep -v '/integration$')
+        run: |
+          # shellcheck disable=SC2046
+          go test -race -short $(go list ./... | grep -v '/integration$')
       - name: Upload unit test coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.23.x'
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
@@ -278,6 +281,7 @@ jobs:
       - name: Generate coverage report
         run: |
           # Generate combined coverage from unit and integration tests
+          # shellcheck disable=SC2046
           go test -coverprofile=unit-coverage.out -covermode=atomic $(go list ./... | grep -v '/integration$')
           go test -coverprofile=integration-coverage.out -covermode=atomic ./integration/...
           # Merge coverage files
