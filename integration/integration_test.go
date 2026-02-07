@@ -13,10 +13,23 @@ import (
 
 // TestMain builds the binary before running integration tests
 func TestMain(m *testing.M) {
+	// Get current working directory
+	wd, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to get working directory: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Determine repo root (parent of integration directory)
+	repoRoot := filepath.Dir(wd)
+
 	// Build the binary from cmd/sorttf
-	// When running `go test ./...`, the build is executed from the repo root
+	// Output binary to the integration directory
+	binaryPath := filepath.Join(wd, "sorttf-test")
+	cmdPath := filepath.Join(repoRoot, "cmd", "sorttf")
+
 	//nolint:gosec // G204: This is a test helper using trusted build commands
-	cmd := exec.Command("go", "build", "-o", filepath.Join("integration", "sorttf-test"), "./cmd/sorttf")
+	cmd := exec.Command("go", "build", "-o", binaryPath, cmdPath)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	cmd.Stdout = &stderr
@@ -28,8 +41,8 @@ func TestMain(m *testing.M) {
 	// Run tests
 	code := m.Run()
 
-	// Cleanup - remove the binary from the integration directory
-	_ = os.Remove("sorttf-test")
+	// Cleanup - remove the binary
+	_ = os.Remove(binaryPath)
 
 	os.Exit(code)
 }
