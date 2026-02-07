@@ -86,7 +86,7 @@
 //
 // Import the api package to use sortTF programmatically:
 //
-//	import "sorttf/api"
+//	import "github.com/obergerkatz/sortTF/api"
 //
 //	err := api.SortFile("main.tf", api.Options{})
 package sorttf

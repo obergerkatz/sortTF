@@ -11,7 +11,7 @@
 //
 // Example usage:
 //
-//	import "sorttf/api"
+//	import "github.com/obergerkatz/sortTF/api"
 //
 //	// Sort a single file
 //	err := api.SortFile("main.tf", api.Options{})
@@ -36,8 +36,8 @@ import (
 	"fmt"
 	"os"
 
-	"sorttf/hcl"
-	"sorttf/internal/files"
+	"github.com/obergerkatz/sortTF/hcl"
+	"github.com/obergerkatz/sortTF/internal/files"
 
 	hcllib "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"

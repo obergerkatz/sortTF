@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sorttf/internal/errors"
+	"github.com/obergerkatz/sortTF/internal/errors"
 )
 
 // IsValidFile checks if a file should be processed based on its name and type.

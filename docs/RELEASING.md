@@ -250,7 +250,7 @@ git push origin "$VERSION"
 
 ```bash
 # Watch GitHub Actions
-# https://github.com/OBerger96/sortTF/actions
+# https://github.com/obergerkatz/sortTF/actions
 
 # Workflow will:
 # 1. Validate version format
@@ -265,7 +265,7 @@ git push origin "$VERSION"
 
 ```bash
 # Check release was created
-# https://github.com/OBerger96/sortTF/releases
+# https://github.com/obergerkatz/sortTF/releases
 
 # Verify artifacts are present:
 # - sorttf-linux-amd64
@@ -276,7 +276,7 @@ git push origin "$VERSION"
 # - checksums.txt
 
 # Download and test a binary
-wget https://github.com/OBerger96/sortTF/releases/download/$VERSION/sorttf-linux-amd64
+wget https://github.com/obergerkatz/sortTF/releases/download/$VERSION/sorttf-linux-amd64
 chmod +x sorttf-linux-amd64
 ./sorttf-linux-amd64 --version
 ```
@@ -303,11 +303,11 @@ Test installation methods:
 
 ```bash
 # Test go install
-go install github.com/OBerger96/sortTF/cmd/sorttf@v1.3.0
+go install github.com/obergerkatz/sortTF/cmd/sorttf@v1.3.0
 sorttf --version
 
 # Test binary download
-wget https://github.com/OBerger96/sortTF/releases/download/v1.3.0/sorttf-linux-amd64
+wget https://github.com/obergerkatz/sortTF/releases/download/v1.3.0/sorttf-linux-amd64
 chmod +x sorttf-linux-amd64
 ./sorttf-linux-amd64 --version
 ```
@@ -600,9 +600,9 @@ Everything else is handled by GitHub Actions:
 
 ## Questions?
 
-- **Release process issues**: Check [GitHub Actions logs](https://github.com/OBerger96/sortTF/actions)
+- **Release process issues**: Check [GitHub Actions logs](https://github.com/obergerkatz/sortTF/actions)
 - **Version numbering questions**: See [SemVer spec](https://semver.org/)
-- **General help**: Open a [GitHub Discussion](https://github.com/OBerger96/sortTF/discussions)
+- **General help**: Open a [GitHub Discussion](https://github.com/obergerkatz/sortTF/discussions)
 
 ---
 
