@@ -219,7 +219,7 @@ jobs:
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
         with:
           tag_name: ${{ needs.validate.outputs.version }}
-          name: Release ${{ needs.validate.outputs.version }}
+          name: ${{ needs.validate.outputs.version }}
           body: ${{ steps.changelog.outputs.changelog }}
           draft: ${{ github.event.inputs.draft || false }}
           prerelease: ${{ needs.validate.outputs.is_prerelease == 'true' || github.event.inputs.prerelease || false }}
@@ -232,22 +232,6 @@ jobs:
             dist/checksums.txt
           generate_release_notes: true
           make_latest: ${{ needs.validate.outputs.is_prerelease == 'false' }}
-      - name: Create git tag (manual releases only)
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          VERSION: ${{ needs.validate.outputs.version }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          if ! git rev-parse "$VERSION" >/dev/null 2>&1; then
-            git tag -a "$VERSION" -m "Release $VERSION"
-            git push origin "$VERSION"
-            echo "✅ Created and pushed tag: $VERSION"
-          else
-            echo "ℹ️  Tag $VERSION already exists"
-          fi
       - name: Release summary
         env:
           VERSION: ${{ needs.validate.outputs.version }}
