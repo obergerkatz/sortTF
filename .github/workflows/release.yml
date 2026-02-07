@@ -134,7 +134,11 @@ jobs:
         run: |
           set -euo pipefail
 
-          PREV_TAG="$(git describe --tags --abbrev=0 "${VERSION}^" 2>/dev/null || echo "")"
+          # Find the previous tag (latest tag excluding the current version)
+          PREV_TAG="$(git tag --sort=-version:refname | grep -v "^${VERSION}$" | head -n 1 || echo "")"
+
+          echo "Current version: $VERSION"
+          echo "Previous tag: ${PREV_TAG:-none}"
 
           if [ -n "$PREV_TAG" ]; then
             CHANGELOG_LINK="https://github.com/obergerkatz/sortTF/compare/${PREV_TAG}...${VERSION}"
@@ -153,7 +157,9 @@ jobs:
               echo "### ✨ Features"
               git log --pretty=format:"- %s" --reverse | head -20
             else
-              git log --pretty=format:"- %s" "${PREV_TAG}..${VERSION}" | grep -v "^- Merge" || echo "- Bug fixes and improvements"
+              echo "Changes since ${PREV_TAG}:"
+              echo ""
+              git log --pretty=format:"- %s" "${PREV_TAG}..HEAD" | grep -v "^- Merge" || echo "- Bug fixes and improvements"
             fi
 
             echo ""
