@@ -43,8 +43,7 @@ func ParseHCLFile(path string) (*ParsedFile, error) {
 	}
 
 	parser := hclparse.NewParser()
-	//nolint:gosec // G304: File path comes from user input, which is expected for a file processing tool
-	src, err := os.ReadFile(path)
+	src, err := os.ReadFile(path) // #nosec G304 -- File path comes from user input, which is expected for a file processing tool
 	if err != nil {
 		return nil, &HCLError{
 			Op:   "ParseHCLFile",

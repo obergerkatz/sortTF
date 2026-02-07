@@ -203,8 +203,7 @@ func processFile(filePath string, config *config.Config, stdout, _ io.Writer) er
 		_, _ = warningColor.Fprintf(stdout, "⚠️  Needs update: %s\n", fileColor.Sprint(filePath))
 
 		// Get original and sorted content for diff
-		//nolint:gosec // G304: User input expected for file tool
-		origContent, _ := os.ReadFile(filePath)
+		origContent, _ := os.ReadFile(filePath) // #nosec G304 -- User input expected for file tool
 		sortedContent, _, _ := api.GetSortedContent(filePath)
 
 		if origContent != nil && sortedContent != "" {
@@ -221,8 +220,7 @@ func processFile(filePath string, config *config.Config, stdout, _ io.Writer) er
 			_, _ = warningColor.Fprintf(stdout, "📝 Would update: %s\n", fileColor.Sprint(filePath))
 
 			// Get original and sorted content for diff
-			//nolint:gosec // G304: File path comes from user input, which is expected for a file processing tool
-			origContent, _ := os.ReadFile(filePath)
+			origContent, _ := os.ReadFile(filePath) // #nosec G304 -- File path comes from user input, which is expected for a file processing tool
 			sortedContent, _, _ := api.GetSortedContent(filePath)
 
 			if origContent != nil && sortedContent != "" {

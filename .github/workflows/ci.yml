@@ -67,6 +67,25 @@ jobs:
         with:
           extra_args: --all-files --show-diff-on-failure --color always
   # ===========================================================================
+  # PR Labeler
+  # ===========================================================================
+  labeler:
+    name: PR Labeler
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Label PR
+        uses: actions/labeler@634933edcd8ababfe52f92936142cc22ac488b1b # v6.0.1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
+          sync-labels: true
+  # ===========================================================================
   # Security Scanning
   # ===========================================================================
   security:
@@ -160,7 +179,7 @@ jobs:
   # ===========================================================================
   build:
     name: Build
-    needs: [lint, test]
+    needs: [lint, security, integration]
     strategy:
       matrix:
         include:
@@ -259,12 +278,35 @@ jobs:
           script: |
             const fs = require('fs');
             const bench = fs.readFileSync('bench.txt', 'utf8');
-            github.rest.issues.createComment({
+            const marker = '<!-- benchmark-results -->';
+            const body = `${marker}\n## Benchmark Results\n\`\`\`\n${bench}\n\`\`\``;
+
+            // Find existing benchmark comment
+            const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## Benchmark Results\n\`\`\`\n${bench}\n\`\`\``
             });
+
+            const existingComment = comments.find(comment => comment.body.includes(marker));
+
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                comment_id: existingComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }
   # ===========================================================================
   # Coverage Report
   # ===========================================================================
@@ -311,7 +353,7 @@ jobs:
   all-checks:
     name: All Checks Passed
     if: always()
-    needs: [lint, pre-commit, security, test, integration, build, verify]
+    needs: [lint, pre-commit, security, test, integration, build, verify, coverage]
     runs-on: ubuntu-latest
     steps:
       - name: Check all jobs status
@@ -322,7 +364,8 @@ jobs:
              [ "${{ needs.test.result }}" != "success" ] || \
              [ "${{ needs.integration.result }}" != "success" ] || \
              [ "${{ needs.build.result }}" != "success" ] || \
-             [ "${{ needs.verify.result }}" != "success" ]; then
+             [ "${{ needs.verify.result }}" != "success" ] || \
+             [ "${{ needs.coverage.result }}" != "success" ]; then
             echo "One or more jobs failed"
             exit 1
           fi

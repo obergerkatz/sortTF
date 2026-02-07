@@ -93,6 +93,7 @@ resource "aws_instance" "web" {
 - **[Contributing](docs/CONTRIBUTING.md)** - Contribution guidelines and development setup
 - **[Development](docs/DEVELOPMENT.md)** - Building, testing, and code structure
 - **[Architecture](docs/ARCHITECTURE.md)** - Technical design and implementation details
+- **[CI/CD Pipeline](docs/CI.md)** - Continuous Integration workflow and job dependencies
 - **[Releasing](docs/RELEASING.md)** - How to create and publish releases
 
 ## Using as a Library

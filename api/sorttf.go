@@ -67,8 +67,7 @@ var (
 //   - error: parsing, validation, or I/O error
 func GetSortedContent(path string) (content string, changed bool, err error) {
 	// Step 1: Read file
-	//nolint:gosec // G304: File path comes from user input, which is expected for a file processing tool
-	origContent, err := os.ReadFile(path)
+	origContent, err := os.ReadFile(path) // #nosec G304 -- File path comes from user input, which is expected for a file processing tool
 	if err != nil {
 		return "", false, fmt.Errorf("read file: %w", err)
 	}
@@ -139,7 +138,7 @@ func SortFile(path string, opts Options) error {
 
 	// Write atomically (normal mode)
 	tmpFile := path + ".tmp"
-	//nolint:gosec // G306: 0644 is appropriate for Terraform configuration files that may be shared
+	// #nosec G306 -- 0644 is appropriate for Terraform configuration files that may be shared
 	if err := os.WriteFile(tmpFile, []byte(formatted), 0644); err != nil {
 		return fmt.Errorf("write temp file: %w", err)
 	}
