@@ -5,7 +5,7 @@ package main
 import (
 	"os"
 
-	"sorttf/cli"
+	"github.com/obergerkatz/sortTF/cli"
 )
 
 func main() {

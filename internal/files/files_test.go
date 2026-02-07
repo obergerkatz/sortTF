@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"sorttf/internal/errors"
+	"github.com/obergerkatz/sortTF/internal/errors"
 )
 
 // Mock FileInfo for testing

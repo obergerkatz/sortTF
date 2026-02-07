@@ -22,10 +22,10 @@ import (
 	"strings"
 	"sync"
 
-	"sorttf/api"
-	"sorttf/config"
-	"sorttf/internal/errors"
-	"sorttf/internal/files"
+	"github.com/obergerkatz/sortTF/api"
+	"github.com/obergerkatz/sortTF/config"
+	"github.com/obergerkatz/sortTF/internal/errors"
+	"github.com/obergerkatz/sortTF/internal/files"
 
 	"github.com/fatih/color"
 )
