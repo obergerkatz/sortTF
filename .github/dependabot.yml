@@ -10,9 +10,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "UTC"
+      day: "sunday"
     # Open pull requests for version updates
     open-pull-requests-limit: 5
     # Commit message configuration
@@ -48,9 +46,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "UTC"
+      day: "sunday"
     # Open pull requests for version updates
     open-pull-requests-limit: 5
     # Commit message configuration
