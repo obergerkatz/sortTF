@@ -1,0 +1,118 @@
+---
+# ============================================================================
+# GitHub PR Labeler Configuration
+# ============================================================================
+# Automatically labels pull requests based on file paths that are modified
+# Supports glob patterns and multiple labels per PR
+# Docs: https://github.com/actions/labeler
+
+# ============================================================================
+# Documentation Changes
+# ============================================================================
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**/*'
+          - '*.md'
+          - '.github/**/*.md'
+# ============================================================================
+# Core Components
+# ============================================================================
+api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'api/**/*'
+cli:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'cli/**/*'
+          - 'cmd/**/*'
+hcl-parser:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'hcl/**/*'
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'config/**/*'
+internal:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'internal/**/*'
+# ============================================================================
+# Testing
+# ============================================================================
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*_test.go'
+          - 'testdata/**/*'
+integration-tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'integration/**/*'
+# ============================================================================
+# CI/CD and Tooling
+# ============================================================================
+ci-cd:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**/*'
+          - '.github/actions/**/*'
+tooling:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.golangci.yml'
+          - '.pre-commit-config.yaml'
+          - '.yamlfmt.yaml'
+          - '.yamllint.yaml'
+          - '.markdownlint.yaml'
+          - 'Makefile'
+# ============================================================================
+# Dependencies
+# ============================================================================
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'go.mod'
+          - 'go.sum'
+# ============================================================================
+# Configuration Files
+# ============================================================================
+configuration:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.gitignore'
+          - '.editorconfig'
+          - '*.yaml'
+          - '*.yml'
+          - '*.json'
+          - '*.toml'
+# ============================================================================
+# GitHub Templates and Configuration
+# ============================================================================
+github:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**/*'
+          - '!.github/workflows/**/*'
+# ============================================================================
+# Release and Build
+# ============================================================================
+release:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'CHANGELOG.md'
+          - 'docs/RELEASING.md'
+
+# ============================================================================
+# Size Labels (Automatically calculated)
+# ============================================================================
+# These are typically set by size-based labeler actions
+# Listed here for reference:
+# - size/XS: < 10 lines changed
+# - size/S: 10-29 lines changed
+# - size/M: 30-99 lines changed
+# - size/L: 100-499 lines changed
+# - size/XL: 500-999 lines changed
+# - size/XXL: 1000+ lines changed

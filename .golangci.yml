@@ -1,0 +1,33 @@
+# golangci-lint configuration
+# https://golangci-lint.run/usage/configuration/
+---
+version: "2"
+linters:
+  # Enable specific linters
+  enable:
+    # Bugs and correctness (some are enabled by default)
+    - errcheck # Checks for unchecked errors
+    - govet # Go vet
+    - ineffassign # Detects ineffectual assignments
+    - staticcheck # Advanced Go linting
+    - unused # Checks for unused code
+    # Code quality
+    - gocyclo # Cyclomatic complexity
+    - misspell # Spelling mistakes
+    - revive # Drop-in replacement for golint
+    - unparam # Unused function parameters
+    # Performance
+    - prealloc # Finds slice declarations that could be preallocated
+    # Style
+    - gocritic # Go code critique
+    - whitespace # Whitespace issues
+    # Error handling
+    - errchkjson # Checks for unchecked json.Marshal errors
+    - errorlint # Error wrapping
+    # Security
+    - gosec # Security issues
+    # Bugs
+    - bodyclose # Checks HTTP response body is closed
+    - nilerr # Finds code that returns nil even if error is not nil
+    - rowserrcheck # Checks for err assignment in rows.Err()
+    - sqlclosecheck # Checks SQL rows/statements are closed

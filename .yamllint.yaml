@@ -1,0 +1,17 @@
+---
+extends: default
+rules:
+  truthy: disable
+  document-start:
+    present: true
+    level: warning
+  empty-lines:
+    max: 1
+    level: warning
+  line-length: disable
+  indentation:
+    spaces: 2
+    level: warning
+  trailing-spaces: disable
+  comments:
+    min-spaces-from-content: 1

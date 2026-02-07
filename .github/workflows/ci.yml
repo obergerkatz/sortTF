@@ -1,38 +1,372 @@
+---
 name: CI
-
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
-
+    branches: [main]
+  workflow_dispatch: # Allow manual triggering
+# Cancel in-progress runs when a new workflow with the same group name is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  GO_VERSION: '1.23.10'
 jobs:
-  build-and-test:
+  # ===========================================================================
+  # Linting and Code Quality
+  # ===========================================================================
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: '1.24.4'
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+        with:
+          version: latest
+          args: --timeout=5m --verbose
+      - name: Check Go formatting
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "The following files are not formatted:"
+            gofmt -s -l .
+            exit 1
+          fi
+      - name: Check Go mod tidy
+        run: |
+          go mod tidy
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "go.mod or go.sum is not tidy"
+            git diff
+            exit 1
+          fi
+  # ===========================================================================
+  # Pre-commit Hooks
+  # ===========================================================================
+  pre-commit:
+    name: Pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: '3.14'
+      - name: Install pre-commit
+        run: pip install pre-commit
+      - name: Run pre-commit
+        uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+        with:
+          extra_args: --all-files --show-diff-on-failure --color always
+  # ===========================================================================
+  # PR Labeler
+  # ===========================================================================
+  labeler:
+    name: PR Labeler
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Label PR
+        uses: actions/labeler@634933edcd8ababfe52f92936142cc22ac488b1b # v6.0.1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
+          sync-labels: true
+  # ===========================================================================
+  # Security Scanning
+  # ===========================================================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@424fc4cd9c82ea0fd6bee9cd49c2db2c3cc0c93f # v2.22.11
+        with:
+          args: '-no-fail -fmt sarif -out results.sarif ./...'
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@6bc82e05fd0ea64601dd4b465378bbcf57de0314 # v4.32.1
+        with:
+          sarif_file: results.sarif
+      - name: Run govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+  # ===========================================================================
+  # Testing Matrix (Multiple Go Versions and OS)
+  # ===========================================================================
+  test:
+    name: Test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: ['1.23.x']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+      - name: Run unit tests
+        shell: bash
+        run: |
+          # Run tests excluding integration package
+          # shellcheck disable=SC2046
+          go test -race -covermode=atomic -coverprofile=coverage.out -v $(go list ./... | grep -v '/integration$')
+      - name: Run tests with race detector
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          # shellcheck disable=SC2046
+          go test -race -short $(go list ./... | grep -v '/integration$')
+      - name: Upload unit test coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.23.x'
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        with:
+          files: ./coverage.out
+          flags: unittests
+          name: codecov-unit
+          fail_ci_if_error: false
+  # ===========================================================================
+  # Integration Tests
+  # ===========================================================================
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Run integration tests
+        run: go test -v -timeout 10m ./integration/...
+      - name: Run integration tests with coverage
+        run: go test -coverprofile=integration-coverage.out -v ./integration/...
+      - name: Upload integration coverage
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        with:
+          files: ./integration-coverage.out
+          flags: integration
+          fail_ci_if_error: false
+  # ===========================================================================
+  # Build Binary for Multiple Platforms
+  # ===========================================================================
+  build:
+    name: Build
+    needs: [lint, security, integration]
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            artifact_name: sorttf-linux-amd64
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            artifact_name: sorttf-linux-arm64
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            artifact_name: sorttf-darwin-amd64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            artifact_name: sorttf-darwin-arm64
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            artifact_name: sorttf-windows-amd64.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          go build -v -trimpath -ldflags="-s -w -X main.version=${{ github.sha }}" -o ${{ matrix.artifact_name }} ./cmd/sorttf
+      - name: Upload artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}
+          retention-days: 7
+  # ===========================================================================
+  # Verify Built Binary Works
+  # ===========================================================================
+  verify:
+    name: Verify Binary
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Download Linux binary
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: sorttf-linux-amd64
+      - name: Make binary executable
+        run: chmod +x sorttf-linux-amd64
+      - name: Test binary help
+        run: ./sorttf-linux-amd64 --help
+      - name: Test binary on sample file
+        run: |
+          echo 'resource "test" "foo" { name = "bar" }' > test.tf
+          ./sorttf-linux-amd64 test.tf
+          cat test.tf
+  # ===========================================================================
+  # Benchmarks
+  # ===========================================================================
+  benchmark:
+    name: Benchmark
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Run benchmarks
+        run: |
+          go test -bench=. -benchmem -run=^$ ./... | tee bench.txt
+      - name: Comment benchmark results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const bench = fs.readFileSync('bench.txt', 'utf8');
+            const marker = '<!-- benchmark-results -->';
+            const body = `${marker}\n## Benchmark Results\n\`\`\`\n${bench}\n\`\`\``;
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
+            // Find existing benchmark comment
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
 
-      - name: Install dependencies
-        run: go mod download
+            const existingComment = comments.find(comment => comment.body.includes(marker));
 
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.2.1
-
-      - name: Lint
-        run: golangci-lint run --timeout 10s
-
-      - name: Run tests
-        run: go test ./...
-
-      - name: Build CLI
-        run: go build -o sorttf
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                comment_id: existingComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }
+  # ===========================================================================
+  # Coverage Report
+  # ===========================================================================
+  coverage:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs: [test, integration]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: Generate coverage report
+        run: |
+          # Generate combined coverage from unit and integration tests
+          # shellcheck disable=SC2046
+          go test -coverprofile=unit-coverage.out -covermode=atomic $(go list ./... | grep -v '/integration$')
+          go test -coverprofile=integration-coverage.out -covermode=atomic ./integration/...
+          # Merge coverage files
+          echo "mode: atomic" > coverage.out
+          tail -n +2 unit-coverage.out >> coverage.out
+          tail -n +2 integration-coverage.out >> coverage.out
+          go tool cover -html=coverage.out -o coverage.html
+      - name: Upload coverage HTML
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: coverage-report
+          path: coverage.html
+          retention-days: 14
+      - name: Check coverage threshold
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Total coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 90" | bc -l) )); then
+            echo "Coverage is below 90%"
+            exit 1
+          fi
+  # ===========================================================================
+  # Final Status Check (Required for branch protection)
+  # ===========================================================================
+  all-checks:
+    name: All Checks Passed
+    if: always()
+    needs: [lint, pre-commit, security, test, integration, build, verify, coverage]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all jobs status
+        run: |
+          if [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.pre-commit.result }}" != "success" ] || \
+             [ "${{ needs.security.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.integration.result }}" != "success" ] || \
+             [ "${{ needs.build.result }}" != "success" ] || \
+             [ "${{ needs.verify.result }}" != "success" ] || \
+             [ "${{ needs.coverage.result }}" != "success" ]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi
+          echo "All checks passed!"

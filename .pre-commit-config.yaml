@@ -1,0 +1,51 @@
+---
+default_language_version:
+  python: python3.14.2 # sync with .python-version
+repos:
+  # 1) Fast, low-noise sanity checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+      - id: detect-private-key
+      - id: detect-aws-credentials
+        args: [--allow-missing-credentials]
+      - id: check-json
+      - id: check-toml
+      - id: check-yaml
+  # 2) Formatters (autofix early so linters run on formatted code)
+  - repo: https://github.com/google/yamlfmt
+    rev: v0.21.0
+    hooks:
+      - id: yamlfmt
+        args: [-conf=.yamlfmt.yaml]
+  # 4) Linters
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.17.0
+    hooks:
+      - id: markdownlint-cli2
+        args: [--config, .markdownlint.yaml, --fix]
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.37.1
+    hooks:
+      - id: yamllint
+        args: [--strict, --config-file=.yamllint.yaml]
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.10
+    hooks:
+      - id: actionlint
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.36.0
+    hooks:
+      - id: check-jsonschema
+        name: Validate GitHub Workflows (.github/workflows)
+        files: ^\.github/workflows/.*\.ya?ml$
+        args: ['--schemafile=https://json.schemastore.org/github-workflow.json']
+  # 5) Secret scanning
+  - repo: https://github.com/zricethezav/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks

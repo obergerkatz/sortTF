@@ -1,196 +1,147 @@
 # sortTF
 
-A powerful command-line tool for sorting and formatting Terraform (.tf) and Terragrunt (.hcl) files to ensure consistency and readability across your infrastructure code.
+[![Go Version](https://img.shields.io/badge/Go-1.23%2B-blue.svg)](https://golang.org/dl/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/obergerkatz/sortTF)](https://goreportcard.com/report/github.com/obergerkatz/sortTF)
+[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](https://github.com/obergerkatz/sortTF)
 
-## 🚀 Features at a Glance
+A command-line tool and Go library for sorting and formatting Terraform (.tf) and Terragrunt (.hcl) files to ensure consistency and readability across your infrastructure code.
 
-- **Smart Block Sorting**: Orders Terraform blocks for readability and best practices.
-- **Attribute Sorting**: Alphabetizes attributes, with special handling for `for_each`.
-- **Nested Block Support**: Handles deeply nested and complex HCL structures.
-- **Formatting**: Applies `terraform fmt` standards.
-- **Multiple Modes**: Dry-run, validation, and recursive directory processing.
-- **Comprehensive Error Handling**: Detailed, colorized error messages.
-- **Cross-Platform**: Works on macOS, Linux, and Windows.
-- **Tested & Modular**: Well-tested, DRY, and maintainable codebase.
+## Features
 
-## ⚡ Quickstart
+- **Smart Block Sorting**: Orders Terraform blocks according to best practices
+- **Attribute Sorting**: Alphabetizes attributes with special handling for `for_each`
+- **Nested Block Support**: Handles deeply nested and complex HCL structures
+- **Formatting**: Applies `terraform fmt` standards automatically
+- **Multiple Modes**: Dry-run, validation, and recursive directory processing
+- **Library API**: Use as a Go library in your own tools
+- **Cross-Platform**: Works on macOS, Linux, and Windows
+- **Well-Tested**: 95% test coverage with 155+ unit tests and 29 integration tests
+
+## Quick Start
+
+### Installation
 
 ```bash
-# Install (from source)
-git clone https://github.com/obergerkatz/sortTF.git
-cd sortTF
-go build -o sorttf
-sudo mv sorttf /usr/local/bin/
+# Using go install (recommended)
+go install github.com/obergerkatz/sortTF/cmd/sorttf@latest
 
-# Or using Go install
-go install github.com/OBerger96/sortTF@latest
-
-# Basic usage
-sorttf .
+# Or download pre-built binaries from releases
+# https://github.com/obergerkatz/sortTF/releases
 ```
 
-## 🛠️ Prerequisites
-
-- **Go 1.24.4+** (for building from source)
-- **Terraform** (for formatting functionality)
-
-## 📖 Usage
+See [Installation Guide](docs/INSTALLATION.md) for more options.
 
 ### Basic Usage
 
 ```bash
-sorttf .                # Sort and format files in current directory
-sorttf main.tf          # Sort and format a specific file
-sorttf --recursive .    # Recursively process subdirectories
-sorttf --dry-run .      # Show what would change without writing
-sorttf --validate .     # Validate files without making changes
-sorttf --verbose .      # Verbose output
-```
+# Sort files in current directory
+sorttf .
 
-### Command Line Options
-
-| Flag         | Description                                                        |
-|--------------|--------------------------------------------------------------------|
-| `--recursive`| Scan directories recursively                                       |
-| `--dry-run`  | Show what would be changed without writing (shows a unified diff)  |
-| `--verbose`  | Print detailed logs about which files were parsed, sorted, and formatted |
-| `--validate` | Exit with a non-zero code if any files are not sorted/formatted    |
-
-### Examples
-
-```bash
+# Sort specific file
 sorttf main.tf
-sorttf --recursive --verbose .
-sorttf --validate --recursive .
-sorttf --dry-run --recursive .
+
+# Recursively sort all files
+sorttf --recursive .
+
+# Preview changes without modifying files
+sorttf --dry-run .
+
+# Validate files (useful in CI/CD)
+sorttf --validate .
 ```
 
-## 🔧 How It Works
+See [Usage Guide](docs/USAGE.md) for detailed examples and options.
 
-### Block Sorting Order
+## How It Works
 
-sortTF sorts Terraform blocks in the following order:
+sortTF reorders Terraform blocks in a standardized sequence:
 
-1. **terraform**
-2. **provider**
-3. **variable**
-4. **locals**
-5. **data**
-6. **resource**
-7. **module**
-8. **output**
+1. `terraform` → 2. `provider` → 3. `variable` → 4. `locals` → 5. `data` → 6. `resource` → 7. `module` → 8. `output`
 
-### Attribute Sorting
+Within blocks, attributes are sorted alphabetically with `for_each` always placed first.
 
-- `for_each` is always placed first (if present)
-- Other attributes are sorted alphabetically
-- Nested blocks are sorted by type and then by labels
-
-#### Example Transformation
+### Example
 
 **Before:**
+
 ```hcl
 resource "aws_instance" "web" {
   instance_type = "t3.micro"
   ami           = "ami-123456"
-  tags = { Name = "web-server" }
 }
 provider "aws" { region = "us-west-2" }
 variable "environment" { type = string }
 ```
 
 **After:**
+
 ```hcl
 provider "aws" { region = "us-west-2" }
 variable "environment" { type = string }
 resource "aws_instance" "web" {
   ami           = "ami-123456"
   instance_type = "t3.micro"
-  tags = { Name = "web-server" }
 }
 ```
 
-## 🧪 Testing
+## Documentation
 
-```bash
-go test ./...           # Run all tests
-go test -v ./...        # Verbose output
-go test -cover ./...    # Run with coverage
+- **[Installation Guide](docs/INSTALLATION.md)** - Installation instructions for all platforms
+- **[Usage Guide](docs/USAGE.md)** - Comprehensive CLI usage and examples
+- **[Library API](docs/API.md)** - Using sortTF as a Go library
+- **[Contributing](docs/CONTRIBUTING.md)** - Contribution guidelines and development setup
+- **[Development](docs/DEVELOPMENT.md)** - Building, testing, and code structure
+- **[Architecture](docs/ARCHITECTURE.md)** - Technical design and implementation details
+- **[CI/CD Pipeline](docs/CI.md)** - Continuous Integration workflow and job dependencies
+- **[Releasing](docs/RELEASING.md)** - How to create and publish releases
+
+## Using as a Library
+
+Import sortTF in your Go programs:
+
+```go
+import "github.com/obergerkatz/sortTF/api"
+
+// Sort a single file
+err := api.SortFile("main.tf", api.Options{})
+
+// Sort multiple files
+results := api.SortFiles(paths, api.Options{DryRun: true})
+
+// Sort entire directory
+results, err := api.SortDirectory("./terraform", true, api.Options{})
 ```
 
-## 🏗️ Development
+See [Library API Documentation](docs/API.md) for more details.
 
-### Project Structure
+## Contributing
 
-```
-sortTF/
-├── main.go                 # Application entry point
-├── utils/
-│   ├── cliutil/           # Command-line interface
-│   ├── argsutil/          # CLI argument parsing
-│   ├── errorutil/         # Error helpers and types
-│   ├── fileutil/          # File system operations
-│   ├── formattingutil/    # HCL formatting
-│   ├── parsingutil/       # HCL parsing and validation
-│   └── sortingutil/       # Block and attribute sorting
-```
+Contributions are welcome! Please read the [Contributing Guide](docs/CONTRIBUTING.md) for details on:
 
-### Building
+- Setting up your development environment
+- Running tests and linters
+- Submitting pull requests
+- Code style and conventions
 
-```bash
-# Build for current platform
-go build -o sorttf
+## Project Status
 
-# Build for specific platforms
-GOOS=linux GOARCH=amd64 go build -o sorttf-linux
-GOOS=darwin GOARCH=amd64 go build -o sorttf-darwin
-GOOS=windows GOARCH=amd64 go build -o sorttf-windows.exe
-```
+sortTF is actively maintained and used in production environments. The project follows semantic versioning and aims for backward compatibility.
 
-### Code Quality
+- **Latest Release**: See [GitHub Releases](https://github.com/obergerkatz/sortTF/releases)
+- **Changelog**: See [GitHub Releases](https://github.com/obergerkatz/sortTF/releases) for version history
+- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/obergerkatz/sortTF/issues)
 
-```bash
-# Run linter
-go vet ./...
-
-# Format code
-go fmt ./...
-
-# Run tests with coverage
-go test -cover ./...
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow Go coding standards
-- Add tests for new features
-- Update documentation as needed
-- Ensure all tests pass before submitting PR
-
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🐛 Known Issues
-
-- Requires Terraform to be installed for formatting functionality
-- Some edge cases with deeply nested blocks may need manual review
-- Comments are preserved but may be repositioned during sorting
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/sortTF/issues)
-
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Built with [HashiCorp HCL](https://github.com/hashicorp/hcl)
 - Inspired by `terraform fmt` and similar formatting tools
-- Thanks to the Go community for excellent tooling and libraries 
+- Thanks to the Go community for excellent tooling and libraries
+
+---
+
+Made with ❤️ for the Terraform community
