@@ -63,7 +63,9 @@ jobs:
       - name: Install pre-commit
         run: pip install pre-commit
       - name: Run pre-commit
-        run: pre-commit run --all-files --show-diff-on-failure
+        uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+        with:
+          extra_args: --all-files --show-diff-on-failure --color always
   # ===========================================================================
   # Security Scanning
   # ===========================================================================
@@ -197,6 +199,9 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: 0
         run: |
+          pwd
+          ls -la
+          ls -la cmd/
           go build -v -trimpath -ldflags="-s -w -X main.version=${{ github.sha }}" -o ${{ matrix.artifact_name }} ./cmd/sorttf
       - name: Upload artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
