@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"sorttf/config"
+	"github.com/obergerkatz/sortTF/config"
 )
 
 // BenchmarkProcessFilesConcurrent measures concurrent file processing performance

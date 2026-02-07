@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"sorttf/internal/errors"
+	"github.com/obergerkatz/sortTF/internal/errors"
 )
 
 func TestSentinelErrors(t *testing.T) {

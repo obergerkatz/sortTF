@@ -1,4 +1,4 @@
-module sorttf
+module github.com/obergerkatz/sortTF
 
 go 1.23.0
 
