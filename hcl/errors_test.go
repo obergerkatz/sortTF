@@ -73,7 +73,7 @@ func TestHCLError_Unwrap(t *testing.T) {
 	}
 
 	unwrapped := hclErr.Unwrap()
-	if unwrapped != innerErr {
+	if !errors.Is(unwrapped, innerErr) {
 		t.Errorf("Unwrap() = %v, want %v", unwrapped, innerErr)
 	}
 }

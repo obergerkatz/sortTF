@@ -1,6 +1,7 @@
 package hcl
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -82,7 +83,8 @@ func TestParseHCLFile(t *testing.T) {
 				if err == nil {
 					t.Error("expected error, got nil")
 				}
-				if _, ok := err.(*HCLParseError); !ok && err != nil {
+				var hclParseErr *HCLParseError
+				if !errors.As(err, &hclParseErr) && err != nil {
 					// Check that it's either HCLParseError or wrapped
 					t.Logf("got error type: %T", err)
 				}
@@ -115,8 +117,8 @@ func TestParseHCLFile_EmptyPath(t *testing.T) {
 		t.Error("expected nil ParsedFile for empty path")
 	}
 
-	hclErr, ok := err.(*HCLError)
-	if !ok {
+	var hclErr *HCLError
+	if !errors.As(err, &hclErr) {
 		t.Errorf("expected *HCLError, got %T", err)
 	} else {
 		if hclErr.Kind != KindParsing {
@@ -321,8 +323,8 @@ func TestValidateRequiredBlockLabels_NilInput(t *testing.T) {
 		t.Error("expected error for nil input")
 	}
 
-	hclErr, ok := err.(*HCLError)
-	if !ok {
+	var hclErr *HCLError
+	if !errors.As(err, &hclErr) {
 		t.Errorf("expected *HCLError, got %T", err)
 	} else {
 		if hclErr.Kind != KindValidation {
@@ -355,7 +357,7 @@ func TestValidateFilePath(t *testing.T) {
 			setup: func(t *testing.T) string {
 				tmpDir := t.TempDir()
 				path := filepath.Join(tmpDir, "test.tf")
-				os.WriteFile(path, []byte("test"), 0644)
+				_ = os.WriteFile(path, []byte("test"), 0644)
 				return path
 			},
 			wantErr: false,
@@ -389,8 +391,8 @@ func TestValidateFilePath(t *testing.T) {
 			setup: func(t *testing.T) string {
 				tmpDir := t.TempDir()
 				restrictedDir := filepath.Join(tmpDir, "restricted")
-				os.Mkdir(restrictedDir, 0000)
-				t.Cleanup(func() { os.Chmod(restrictedDir, 0755) })
+				_ = os.Mkdir(restrictedDir, 0000)
+				t.Cleanup(func() { _ = os.Chmod(restrictedDir, 0755) })
 				return filepath.Join(restrictedDir, "test.tf")
 			},
 			wantErr: true,

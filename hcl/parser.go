@@ -171,7 +171,7 @@ func validateFilePath(path string) error {
 		if os.IsPermission(err) {
 			return fmt.Errorf("permission denied")
 		}
-		return fmt.Errorf("failed to access file: %v", err)
+		return fmt.Errorf("failed to access file: %w", err)
 	}
 
 	if info.IsDir() {

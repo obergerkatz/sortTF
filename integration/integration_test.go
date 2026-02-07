@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,7 +28,7 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	// Cleanup - remove the binary from the integration directory
-	os.Remove("sorttf-test")
+	_ = os.Remove("sorttf-test")
 
 	os.Exit(code)
 }
@@ -46,7 +47,8 @@ func runSortTF(t *testing.T, args ...string) (stdout, stderr string, exitCode in
 	stderr = errBuf.String()
 
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			exitCode = exitErr.ExitCode()
 		} else {
 			t.Fatalf("failed to run sorttf: %v", err)
@@ -216,7 +218,7 @@ variable "region" {
 	}
 
 	// Test unsorted file fails validation
-	stdout, stderr, exitCode = runSortTF(t, "--validate", unsortedFile)
+	stdout, _, exitCode = runSortTF(t, "--validate", unsortedFile)
 	if exitCode != 1 {
 		t.Errorf("unsorted file should fail validation, got exit code %d", exitCode)
 	}
@@ -686,10 +688,18 @@ resource "aws_vpc" "main" {
 `
 
 	// Create all files
-	os.MkdirAll(filepath.Dir(moduleMainTF), 0755)
-	os.WriteFile(mainTF, []byte(mainContent), 0644)
-	os.WriteFile(variablesTF, []byte(variablesContent), 0644)
-	os.WriteFile(moduleMainTF, []byte(moduleContent), 0644)
+	if err := os.MkdirAll(filepath.Dir(moduleMainTF), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(mainTF, []byte(mainContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(variablesTF, []byte(variablesContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(moduleMainTF, []byte(moduleContent), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Scenario 1: Run validate on the entire project (should fail)
 	stdout, _, exitCode := runSortTF(t, "--validate", "--recursive", tmpDir)
@@ -1374,7 +1384,7 @@ func TestSystem_CLIFlagCombinations(t *testing.T) {
   instance_type = "t2.micro"
   ami = "ami-123"
 }`
-				os.WriteFile(file, []byte(content), 0644)
+				_ = os.WriteFile(file, []byte(content), 0644)
 				return file
 			},
 			wantExit: 0,
@@ -1399,7 +1409,7 @@ func TestSystem_CLIFlagCombinations(t *testing.T) {
   instance_type = "t2.micro"
   ami = "ami-123"
 }`
-				os.WriteFile(file, []byte(content), 0644)
+				_ = os.WriteFile(file, []byte(content), 0644)
 				return file
 			},
 			wantExit: 1, // Should fail validation (file needs sorting)
@@ -1415,7 +1425,7 @@ func TestSystem_CLIFlagCombinations(t *testing.T) {
 			setup: func(t *testing.T) string {
 				tmpDir := t.TempDir()
 				subdir := filepath.Join(tmpDir, "modules")
-				os.Mkdir(subdir, 0755)
+				_ = os.Mkdir(subdir, 0755)
 
 				file1 := filepath.Join(tmpDir, "main.tf")
 				file2 := filepath.Join(subdir, "vpc.tf")
@@ -1423,8 +1433,8 @@ func TestSystem_CLIFlagCombinations(t *testing.T) {
   instance_type = "t2.micro"
   ami = "ami-123"
 }`
-				os.WriteFile(file1, []byte(content), 0644)
-				os.WriteFile(file2, []byte(content), 0644)
+				_ = os.WriteFile(file1, []byte(content), 0644)
+				_ = os.WriteFile(file2, []byte(content), 0644)
 				return tmpDir
 			},
 			wantExit: 0,
@@ -1444,7 +1454,7 @@ func TestSystem_CLIFlagCombinations(t *testing.T) {
   instance_type = "t2.micro"
   ami = "ami-123"
 }`
-				os.WriteFile(file, []byte(content), 0644)
+				_ = os.WriteFile(file, []byte(content), 0644)
 				return tmpDir
 			},
 			wantExit: 0,
@@ -1491,7 +1501,7 @@ resource "aws_instance" "web" {
   instance_type = "t2.micro"
 }
 `
-		os.WriteFile(sorted, []byte(sortedContent), 0644)
+		_ = os.WriteFile(sorted, []byte(sortedContent), 0644)
 
 		// Create unsorted file
 		unsorted := filepath.Join(tmpDir, "unsorted.tf")
@@ -1503,7 +1513,7 @@ variable "env" {
   type = string
 }
 `
-		os.WriteFile(unsorted, []byte(unsortedContent), 0644)
+		_ = os.WriteFile(unsorted, []byte(unsortedContent), 0644)
 
 		stdout, _, exitCode := runSortTF(t, tmpDir)
 
@@ -1521,9 +1531,9 @@ variable "env" {
 		tmpDir := t.TempDir()
 
 		// Create nested structure: root/modules/vpc/main.tf, root/modules/sg/main.tf
-		os.MkdirAll(filepath.Join(tmpDir, "modules", "vpc"), 0755)
-		os.MkdirAll(filepath.Join(tmpDir, "modules", "sg"), 0755)
-		os.MkdirAll(filepath.Join(tmpDir, "environments", "prod"), 0755)
+		_ = os.MkdirAll(filepath.Join(tmpDir, "modules", "vpc"), 0755)
+		_ = os.MkdirAll(filepath.Join(tmpDir, "modules", "sg"), 0755)
+		_ = os.MkdirAll(filepath.Join(tmpDir, "environments", "prod"), 0755)
 
 		files := []string{
 			filepath.Join(tmpDir, "main.tf"),
@@ -1538,7 +1548,7 @@ variable "env" {
 }`
 
 		for _, file := range files {
-			os.WriteFile(file, []byte(content), 0644)
+			_ = os.WriteFile(file, []byte(content), 0644)
 		}
 
 		stdout, _, exitCode := runSortTF(t, "--recursive", tmpDir)
@@ -1571,8 +1581,8 @@ include "root" {
   path = find_in_parent_folders()
 }`
 
-		os.WriteFile(tfFile, []byte(tfContent), 0644)
-		os.WriteFile(hclFile, []byte(hclContent), 0644)
+		_ = os.WriteFile(tfFile, []byte(tfContent), 0644)
+		_ = os.WriteFile(hclFile, []byte(hclContent), 0644)
 
 		stdout, _, exitCode := runSortTF(t, tmpDir)
 
@@ -1590,11 +1600,11 @@ include "root" {
 
 		// Create .terragrunt-cache directory (should be skipped)
 		cacheDir := filepath.Join(tmpDir, ".terragrunt-cache")
-		os.Mkdir(cacheDir, 0755)
+		_ = os.Mkdir(cacheDir, 0755)
 
 		// File in cache (should be ignored)
 		cachedFile := filepath.Join(cacheDir, "cached.tf")
-		os.WriteFile(cachedFile, []byte("# should be ignored"), 0644)
+		_ = os.WriteFile(cachedFile, []byte("# should be ignored"), 0644)
 
 		// Regular file
 		mainFile := filepath.Join(tmpDir, "main.tf")
@@ -1602,7 +1612,7 @@ include "root" {
   instance_type = "t2.micro"
   ami = "ami-123"
 }`
-		os.WriteFile(mainFile, []byte(content), 0644)
+		_ = os.WriteFile(mainFile, []byte(content), 0644)
 
 		stdout, _, exitCode := runSortTF(t, "--recursive", tmpDir)
 
@@ -1665,7 +1675,7 @@ func TestSystem_ErrorScenarios(t *testing.T) {
 				tmpDir := t.TempDir()
 				file := filepath.Join(tmpDir, "invalid.tf")
 				// Unclosed brace
-				os.WriteFile(file, []byte(`resource "aws_instance" "web" {
+				_ = os.WriteFile(file, []byte(`resource "aws_instance" "web" {
   ami = "ami-123"
 `), 0644)
 				return []string{file}
@@ -1694,7 +1704,7 @@ func TestSystem_ErrorScenarios(t *testing.T) {
 				tmpDir := t.TempDir()
 				file := filepath.Join(tmpDir, "test.tf")
 				// Unsorted file
-				os.WriteFile(file, []byte(`resource "aws_instance" "web" {
+				_ = os.WriteFile(file, []byte(`resource "aws_instance" "web" {
   instance_type = "t2.micro"
   ami = "ami-123"
 }`), 0644)
@@ -1710,7 +1720,7 @@ func TestSystem_ErrorScenarios(t *testing.T) {
 			setup: func(t *testing.T) []string {
 				tmpDir := t.TempDir()
 				file := filepath.Join(tmpDir, "test.tf")
-				os.WriteFile(file, []byte(`variable "x" {}`), 0644)
+				_ = os.WriteFile(file, []byte(`variable "x" {}`), 0644)
 				// Both validate and dry-run
 				return []string{"--validate", "--dry-run", file}
 			},
@@ -1750,7 +1760,7 @@ func TestSystem_ExitCodes(t *testing.T) {
 			setup: func(t *testing.T) []string {
 				tmpDir := t.TempDir()
 				file := filepath.Join(tmpDir, "test.tf")
-				os.WriteFile(file, []byte(`resource "aws_instance" "web" {
+				_ = os.WriteFile(file, []byte(`resource "aws_instance" "web" {
   instance_type = "t2.micro"
   ami = "ami-123"
 }`), 0644)
@@ -1788,7 +1798,7 @@ func TestSystem_ExitCodes(t *testing.T) {
 			setup: func(t *testing.T) []string {
 				tmpDir := t.TempDir()
 				file := filepath.Join(tmpDir, "invalid.tf")
-				os.WriteFile(file, []byte(`resource "aws_instance" "web" {`), 0644)
+				_ = os.WriteFile(file, []byte(`resource "aws_instance" "web" {`), 0644)
 				return []string{file}
 			},
 			wantExit: 1,
@@ -1799,7 +1809,7 @@ func TestSystem_ExitCodes(t *testing.T) {
 			setup: func(t *testing.T) []string {
 				tmpDir := t.TempDir()
 				file := filepath.Join(tmpDir, "test.tf")
-				os.WriteFile(file, []byte(`resource "aws_instance" "web" {
+				_ = os.WriteFile(file, []byte(`resource "aws_instance" "web" {
   instance_type = "t2.micro"
   ami = "ami-123"
 }`), 0644)
@@ -1814,7 +1824,7 @@ func TestSystem_ExitCodes(t *testing.T) {
 				tmpDir := t.TempDir()
 				file := filepath.Join(tmpDir, "sorted.tf")
 				// Pre-sorted content
-				os.WriteFile(file, []byte(`variable "region" {
+				_ = os.WriteFile(file, []byte(`variable "region" {
   type = string
 }
 
@@ -1863,7 +1873,7 @@ variable "region" {
 		// Create 50 files
 		for i := 0; i < 50; i++ {
 			file := filepath.Join(tmpDir, fmt.Sprintf("file%03d.tf", i))
-			os.WriteFile(file, []byte(content), 0644)
+			_ = os.WriteFile(file, []byte(content), 0644)
 		}
 
 		stdout, _, exitCode := runSortTF(t, tmpDir)
@@ -1888,11 +1898,11 @@ variable "region" {
 		// Create 100 files across multiple directories
 		for i := 0; i < 10; i++ {
 			subdir := filepath.Join(tmpDir, fmt.Sprintf("dir%02d", i))
-			os.Mkdir(subdir, 0755)
+			_ = os.Mkdir(subdir, 0755)
 
 			for j := 0; j < 10; j++ {
 				file := filepath.Join(subdir, fmt.Sprintf("file%02d.tf", j))
-				os.WriteFile(file, []byte(content), 0644)
+				_ = os.WriteFile(file, []byte(content), 0644)
 			}
 		}
 
@@ -1946,7 +1956,7 @@ func TestSystem_SpecialCharactersInPaths(t *testing.T) {
   instance_type = "t2.micro"
   ami = "ami-123"
 }`
-			os.WriteFile(file, []byte(content), 0644)
+			_ = os.WriteFile(file, []byte(content), 0644)
 
 			_, _, exitCode := runSortTF(t, file)
 

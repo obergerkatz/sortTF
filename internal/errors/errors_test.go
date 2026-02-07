@@ -69,7 +69,7 @@ func TestError_Creation(t *testing.T) {
 			if err.Op != tt.wantOp {
 				t.Errorf("Op = %q, want %q", err.Op, tt.wantOp)
 			}
-			if err.Err != tt.wantErr {
+			if tt.wantErr != nil && !errors.Is(err.Err, tt.wantErr) {
 				t.Errorf("Err = %v, want %v", err.Err, tt.wantErr)
 			}
 		})
@@ -120,7 +120,7 @@ func TestError_Unwrap(t *testing.T) {
 	err := New("TestOp", baseErr)
 
 	unwrapped := err.Unwrap()
-	if unwrapped != baseErr {
+	if !errors.Is(unwrapped, baseErr) {
 		t.Errorf("Unwrap() = %v, want %v", unwrapped, baseErr)
 	}
 }

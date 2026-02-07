@@ -331,10 +331,10 @@ func processFilesConcurrent(filePaths []string, config *config.Config, stdout, s
 	for result := range results {
 		// Write output atomically
 		if result.stdout != "" {
-			io.WriteString(stdout, result.stdout)
+			_, _ = io.WriteString(stdout, result.stdout) // Ignore write errors to stdout
 		}
 		if result.stderr != "" {
-			io.WriteString(stderr, result.stderr)
+			_, _ = io.WriteString(stderr, result.stderr) // Ignore write errors to stderr
 		}
 
 		// Count results

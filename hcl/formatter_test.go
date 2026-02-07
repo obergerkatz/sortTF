@@ -1,6 +1,7 @@
 package hcl
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -88,8 +89,8 @@ func TestFormatHCLFile_NilInput(t *testing.T) {
 		t.Errorf("expected empty string for nil input, got %q", formatted)
 	}
 
-	hclErr, ok := err.(*HCLError)
-	if !ok {
+	var hclErr *HCLError
+	if !errors.As(err, &hclErr) {
 		t.Errorf("expected *HCLError, got %T", err)
 	} else {
 		if hclErr.Kind != KindFormatting {

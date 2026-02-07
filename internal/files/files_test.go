@@ -654,7 +654,7 @@ func TestFindFilesRecursiveWithPermissionError(t *testing.T) {
 	if err := os.Mkdir(restrictedDir, 0000); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chmod(restrictedDir, 0755) // Cleanup
+	defer func() { _ = os.Chmod(restrictedDir, 0755) }() // Cleanup
 
 	// Create a file that should be accessible
 	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(""), 0644); err != nil {
@@ -817,7 +817,7 @@ func TestFindFilesNonRecursiveWithReadDirError(t *testing.T) {
 	if err := os.Mkdir(noReadDir, 0000); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chmod(noReadDir, 0755) // Cleanup
+	defer func() { _ = os.Chmod(noReadDir, 0755) }() // Cleanup
 
 	// Try to find files in the no-read directory (non-recursive)
 	_, err := FindFiles(noReadDir, false)

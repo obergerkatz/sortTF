@@ -1,6 +1,7 @@
 package hcl
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
@@ -67,7 +68,8 @@ func (e *HCLParseError) Error() string {
 
 // IsParsingError checks if an error is a parsing error.
 func IsParsingError(err error) bool {
-	if hclErr, ok := err.(*HCLError); ok {
+	var hclErr *HCLError
+	if errors.As(err, &hclErr) {
 		return hclErr.Kind == KindParsing
 	}
 	return false
@@ -75,13 +77,14 @@ func IsParsingError(err error) bool {
 
 // IsHCLParseError checks if an error is an HCL syntax error.
 func IsHCLParseError(err error) bool {
-	_, ok := err.(*HCLParseError)
-	return ok
+	var hclParseErr *HCLParseError
+	return errors.As(err, &hclParseErr)
 }
 
 // IsValidationError checks if an error is a validation error.
 func IsValidationError(err error) bool {
-	if hclErr, ok := err.(*HCLError); ok {
+	var hclErr *HCLError
+	if errors.As(err, &hclErr) {
 		return hclErr.Kind == KindValidation
 	}
 	return false
@@ -89,7 +92,8 @@ func IsValidationError(err error) bool {
 
 // IsFormattingError checks if an error is a formatting error.
 func IsFormattingError(err error) bool {
-	if hclErr, ok := err.(*HCLError); ok {
+	var hclErr *HCLError
+	if errors.As(err, &hclErr) {
 		return hclErr.Kind == KindFormatting
 	}
 	return false
@@ -97,7 +101,8 @@ func IsFormattingError(err error) bool {
 
 // IsSortingError checks if an error is a sorting error.
 func IsSortingError(err error) bool {
-	if hclErr, ok := err.(*HCLError); ok {
+	var hclErr *HCLError
+	if errors.As(err, &hclErr) {
 		return hclErr.Kind == KindSorting
 	}
 	return false
@@ -105,7 +110,8 @@ func IsSortingError(err error) bool {
 
 // IsNotExistError checks if an error indicates a file doesn't exist.
 func IsNotExistError(err error) bool {
-	if hclErr, ok := err.(*HCLError); ok {
+	var hclErr *HCLError
+	if errors.As(err, &hclErr) {
 		if hclErr.Err != nil {
 			errMsg := hclErr.Err.Error()
 			return containsAny(errMsg, "does not exist", "no such file")
@@ -116,7 +122,8 @@ func IsNotExistError(err error) bool {
 
 // IsPermissionError checks if an error indicates a permission issue.
 func IsPermissionError(err error) bool {
-	if hclErr, ok := err.(*HCLError); ok {
+	var hclErr *HCLError
+	if errors.As(err, &hclErr) {
 		if hclErr.Err != nil {
 			errMsg := hclErr.Err.Error()
 			return containsAny(errMsg, "permission denied", "access denied")

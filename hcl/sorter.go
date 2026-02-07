@@ -273,7 +273,7 @@ func SortBlocksByLabels(blocks []Block) []Block {
 // SortAttributes returns a sorted list of attribute names from a map of attributes.
 // The names are sorted alphabetically. This is a convenience function for sorting attributes.
 func SortAttributes(attributes map[string]*hclwrite.Attribute) []string {
-	var names []string
+	names := make([]string, 0, len(attributes))
 	for name := range attributes {
 		names = append(names, name)
 	}

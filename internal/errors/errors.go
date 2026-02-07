@@ -201,10 +201,10 @@ func Wrap(err error) error {
 		return nil
 	}
 	if os.IsNotExist(err) {
-		return fmt.Errorf("%w: %v", ErrFileNotFound, err)
+		return fmt.Errorf("%w: %w", ErrFileNotFound, err)
 	}
 	if os.IsPermission(err) {
-		return fmt.Errorf("%w: %v", ErrPermissionDenied, err)
+		return fmt.Errorf("%w: %w", ErrPermissionDenied, err)
 	}
 	return err
 }

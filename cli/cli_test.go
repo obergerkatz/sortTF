@@ -34,8 +34,8 @@ func TestRunCLI_NoArgs(t *testing.T) {
 
 	// Change to temp directory
 	origDir, _ := os.Getwd()
-	defer os.Chdir(origDir)
-	os.Chdir(tmpDir)
+	defer func() { _ = os.Chdir(origDir) }()
+	_ = os.Chdir(tmpDir)
 
 	var stdout, stderr bytes.Buffer
 	exitCode := RunCLIWithWriters([]string{}, &stdout, &stderr)

@@ -156,8 +156,8 @@ func TestSortFiles(t *testing.T) {
   ami = "ami-12345"
 }
 `
-	os.WriteFile(file1, []byte(content), 0644)
-	os.WriteFile(file2, []byte(content), 0644)
+	_ = os.WriteFile(file1, []byte(content), 0644)
+	_ = os.WriteFile(file2, []byte(content), 0644)
 
 	// Sort multiple files
 	results := SortFiles([]string{file1, file2}, Options{})
@@ -183,7 +183,7 @@ func TestSortDirectory(t *testing.T) {
   ami = "ami-12345"
 }
 `
-	os.WriteFile(file1, []byte(content), 0644)
+	_ = os.WriteFile(file1, []byte(content), 0644)
 
 	// Sort directory
 	results, err := SortDirectory(tmpDir, false, Options{})
@@ -354,7 +354,7 @@ func TestSortFile_ReadOnlyDirectory(t *testing.T) {
 	if err := os.Chmod(tmpDir, 0555); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chmod(tmpDir, 0755) // Cleanup
+	defer func() { _ = os.Chmod(tmpDir, 0755) }() // Cleanup
 
 	err := SortFile(testFile, Options{})
 	if err == nil {
@@ -514,7 +514,7 @@ func TestSortFile_RenameFailure(t *testing.T) {
 	if err := os.Chmod(subdir, 0555); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chmod(subdir, 0755) // Cleanup
+	defer func() { _ = os.Chmod(subdir, 0755) }() // Cleanup
 
 	err := SortFile(testFile, Options{})
 	if err == nil {
