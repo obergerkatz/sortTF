@@ -1,7 +1,6 @@
-# Pull Request
+# Pull request overview
 
-## Description
-
+## Changes
 <!-- Briefly describe what changes this PR introduces and why -->
 
 ## Testing
@@ -11,13 +10,7 @@
 - [ ] All tests passing
 
 ## Checklist
-
+<!-- Please review the following checklist before submitting your PR -->
 - [ ] Code follows project style guidelines
 - [ ] Self-review completed
 - [ ] Documentation updated (if needed)
-- [ ] No new warnings introduced
-
-<!--
-## Screenshots (if applicable)
-Add screenshots to help explain your changes
--->

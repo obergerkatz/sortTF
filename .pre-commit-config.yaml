@@ -1,6 +1,6 @@
 ---
 default_language_version:
-  python: python3.14.2 # sync with .python-version
+  python: python3.14 # sync with .python-version
 repos:
   # 1) Fast, low-noise sanity checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
