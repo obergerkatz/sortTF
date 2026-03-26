@@ -11,7 +11,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 env:
-  GO_VERSION: '1.23.10'
+  GO_VERSION: '1.25.8'
 jobs:
   # ===========================================================================
   # Linting and Code Quality
@@ -120,7 +120,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ['1.23.x']
+        go-version: ['1.25.x']
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
@@ -142,7 +142,7 @@ jobs:
           # shellcheck disable=SC2046
           go test -race -short $(go list ./... | grep -v '/integration$')
       - name: Upload unit test coverage to Codecov
-        if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.23.x'
+        if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.25.x'
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
           files: ./coverage.out
