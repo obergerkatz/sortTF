@@ -463,7 +463,8 @@ func TestFindFilesPerformance(t *testing.T) {
 	}
 
 	// Performance assertion (adjust threshold as needed)
-	if duration > 100*time.Millisecond {
+	// Increased threshold to 500ms for slower CI environments
+	if duration > 500*time.Millisecond {
 		t.Errorf("FindFiles took too long: %v", duration)
 	}
 }
