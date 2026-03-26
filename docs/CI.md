@@ -408,7 +408,7 @@ main:
 
 ```yaml
 env:
-  GO_VERSION: '1.23.10'
+  GO_VERSION: '1.25.8'
 ```
 
 Update the Go version here to change it across all jobs.
