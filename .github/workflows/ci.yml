@@ -143,7 +143,7 @@ jobs:
           go test -race -short $(go list ./... | grep -v '/integration$')
       - name: Upload unit test coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.25.x'
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           files: ./coverage.out
           flags: unittests
@@ -169,7 +169,7 @@ jobs:
       - name: Run integration tests with coverage
         run: go test -coverprofile=integration-coverage.out -v ./integration/...
       - name: Upload integration coverage
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           files: ./integration-coverage.out
           flags: integration
